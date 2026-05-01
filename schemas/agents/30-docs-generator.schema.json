@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/30-docs-generator.schema.json",
+  "title": "Documentation Generator Output Contract",
+  "description": "Output schema for the docs-generator sub-agent.",
+  "type": "object",
+  "required": ["contract_version", "summary", "doc_kind", "audience", "artifacts", "voice_check", "references", "next_steps"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "doc_kind": {
+      "enum": ["technical", "user-facing", "internal", "stakeholder", "voice-review"]
+    },
+    "audience": {
+      "enum": ["developer", "end-user", "stakeholder", "judge", "internal-team", "mixed"]
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "change"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["readme", "runbook", "onboarding", "changelog", "announcement", "faq", "handout", "operating-manual", "other-doc"] },
+          "change": { "enum": ["created", "modified", "reviewed"] },
+          "excerpt": { "type": "string", "maxLength": 1000, "description": "Optional first-paragraph or summary excerpt of the artifact." }
+        }
+      }
+    },
+    "voice_check": {
+      "type": "object",
+      "required": ["verdict", "findings"],
+      "additionalProperties": false,
+      "properties": {
+        "verdict": { "enum": ["pass", "needs-review", "fail"] },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rule", "severity", "evidence", "suggestion"],
+            "additionalProperties": false,
+            "properties": {
+              "rule": { "enum": ["passive-voice", "missing-oxford-comma", "em-dash-spacing", "product-name-casing", "invented-metric", "register-mismatch", "duplicated-content", "other"] },
+              "severity": { "enum": ["info", "low", "medium", "high"] },
+              "evidence": { "type": "string" },
+              "suggestion": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["owner", "action", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "owner": { "type": "string" },
+          "action": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  }
+}
