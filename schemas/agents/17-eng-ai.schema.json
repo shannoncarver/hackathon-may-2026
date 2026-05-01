@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/17-eng-ai.schema.json",
+  "title": "AI Engineer Output Contract",
+  "description": "Output schema for the eng-ai sub-agent. Coordinator validates every response against this schema.",
+  "type": "object",
+  "required": ["contract_version", "summary", "findings", "artifacts", "references", "next_steps"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver. Bump major when fields are renamed or removed."
+    },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "severity", "target", "evidence", "recommendation"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["design-issue", "convention-violation", "gap", "enhancement"] },
+          "severity": { "enum": ["info", "low", "medium", "high"] },
+          "target": { "type": "string" },
+          "evidence": { "type": "string" },
+          "recommendation": { "type": "string" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "change"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["agent", "skill", "schema", "rubric", "adr", "mcp-config", "doc", "test", "other"] },
+          "change": { "enum": ["created", "modified", "deleted"] }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["owner", "action", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "owner": { "type": "string", "description": "Sub-agent name or 'user'" },
+          "action": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  }
+}

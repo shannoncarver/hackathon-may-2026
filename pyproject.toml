@@ -1,0 +1,19 @@
+[project]
+name = "linq-hackathon-may-2026"
+version = "0.0.1"
+description = "LINQ Hackathon May 2026 — internal AI workflow system"
+requires-python = ">=3.11"
+dependencies = [
+  "anthropic>=0.52.0",
+  "jsonschema>=4.23.0",
+  "pyyaml>=6.0.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "inspect-ai>=0.3.50",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
