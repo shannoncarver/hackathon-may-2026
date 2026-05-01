@@ -6,6 +6,9 @@
 .claude/settings.local.json
 .mcp.local.json
 
+# Git worktrees managed by Claude Code (not part of the project tree)
+.claude/worktrees/
+
 # Runtime artifacts (ignore contents but keep the directories themselves)
 traces/*
 output/*
