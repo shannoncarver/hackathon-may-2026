@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/40-knowledge-curator.schema.json",
+  "title": "Knowledge Curator Output Contract",
+  "description": "Output schema for the knowledge-curator sub-agent.",
+  "type": "object",
+  "required": ["contract_version", "summary", "bucket_decision", "target_path", "artifacts", "gaps", "references", "next_steps"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "bucket_decision": {
+      "enum": ["shared", "product-specific", "both", "flag-for-review"]
+    },
+    "target_path": {
+      "type": "string",
+      "description": "Repo-relative path where the knowledge should live. Use 'unable to determine' if bucket_decision is 'flag-for-review'."
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "change"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["product-overview", "process-doc", "glossary", "persona", "integration", "policy", "stub", "index", "other"] },
+          "change": { "enum": ["created", "modified", "moved", "reviewed"] },
+          "excerpt": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Knowledge gaps identified during review. Empty array is valid.",
+      "items": {
+        "type": "object",
+        "required": ["topic", "why_needed", "suggested_source"],
+        "additionalProperties": false,
+        "properties": {
+          "topic": { "type": "string" },
+          "why_needed": { "type": "string", "description": "Which specialist or task is blocked by this gap." },
+          "suggested_source": { "type": "string", "description": "Confluence URL, public LINQ page, or 'needs-human-author'." }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["owner", "action", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "owner": { "type": "string" },
+          "action": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  }
+}
