@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/50-pm-hackathon-coordinator.schema.json",
+  "title": "Hackathon Coordinator Output Contract",
+  "description": "Output schema for the pm-hackathon-coordinator sub-agent.",
+  "type": "object",
+  "required": ["contract_version", "summary", "deliverable_kind", "target_audience", "artifacts", "talking_points", "risks", "references", "next_steps"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "deliverable_kind": {
+      "enum": ["narrative", "script", "slide-content", "judge-handout", "timeline", "risk-review"]
+    },
+    "target_audience": {
+      "enum": ["judges", "internal-stakeholders", "mixed"]
+    },
+    "runtime_minutes": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Optional. Total estimated runtime for narrative/script deliverables."
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "change"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["narrative", "script", "slide-content", "handout", "timeline", "risk-review"] },
+          "change": { "enum": ["created", "modified", "reviewed"] },
+          "excerpt": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "talking_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["point", "evidence", "time_estimate_seconds"],
+        "additionalProperties": false,
+        "properties": {
+          "point": { "type": "string" },
+          "evidence": { "type": "string", "description": "What backs the claim — file path, knowledge base entry, Confluence URL, or 'live demo'." },
+          "time_estimate_seconds": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["risk", "severity", "mitigation"],
+        "additionalProperties": false,
+        "properties": {
+          "risk": { "type": "string" },
+          "severity": { "enum": ["info", "low", "medium", "high"] },
+          "mitigation": { "type": "string" }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["owner", "action", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "owner": { "type": "string" },
+          "action": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  }
+}
