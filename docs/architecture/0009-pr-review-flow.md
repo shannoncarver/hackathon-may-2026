@@ -13,7 +13,7 @@ All structural changes (new agents, new pillars, MCP bumps, schema changes) land
 ## Consequences
 
 - Slower velocity for structural changes — but those are the changes where slowness pays off.
-- CI runs `evals/run.py --ci` and `pytest` on every PR; failure blocks merge.
+- CI runs `pytest tests/` on every PR; schema/structural failures block merge. Eval harness gating in CI is deferred for the hackathon (see ADR-0011 amendment); the harness remains available as a manual tool.
 - We accept that the demo period may need a hotfix path (a `hotfix/*` branch with expedited review) — to be defined if needed.
 
 ## Sources

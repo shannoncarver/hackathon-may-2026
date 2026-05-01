@@ -47,7 +47,7 @@ The pattern is canonicalized in [`docs/agent/17-eng-ai.md`](../agent/17-eng-ai.m
 
 7. **Run locally** — `python evals/run.py --agent <NN>-<domain>-<role>`. Confirm the report passes.
 
-8. **Open a PR.** CI runs `python evals/run.py --ci` and `pytest`. Merge when both pass and a human approves.
+8. **Open a PR.** CI runs `pytest tests/`; schema regressions block merge. Run `python evals/run.py --agent <NN>-<domain>-<role>` locally before opening the PR and attach the report manually if the change is non-trivial. (Eval harness CI gating is deferred for the hackathon — see [ADR-0011](../architecture/0011-eval-harness-shape.md).)
 
 ## Adding a new skill
 
@@ -61,5 +61,5 @@ Pattern is in `.claude/skills/routing/`:
 
 1. Edit `.mcp.json` with the new version pin.
 2. Add an entry at the top of `MCP_VERSION_CHANGELOG.md` with date, version, and one-line reason.
-3. Run `python evals/run.py --ci`. Attach the report to the PR.
+3. Run `python evals/run.py` locally. Attach the report to the PR.
 4. If any agent's eval set regresses on judge score by ≥0.5, document mitigation before merging.

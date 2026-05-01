@@ -15,7 +15,16 @@ Two-layer harness:
 
 Judge model and prompt are pinned. Calibration: human-review 20% of judge scores weekly; track divergence as its own metric.
 
-CI runs the full suite on every PR; schema failures block merge.
+CI runs schema/structural tests on every PR (`pytest tests/`); schema failures block merge.
+
+## Hackathon-scope amendment (2026-05-01)
+
+CI gating on `evals/run.py --ci` is **deferred** for the hackathon. Reasons:
+- No `ANTHROPIC_API_KEY` configured for CI yet (no remote, no GitHub secrets).
+- Per-run cost ($2-5) and wall-clock time (10-30 min) is unwarranted for the hackathon timeline.
+- Schema validation in `tests/test_schemas.py` already catches structural regressions, which is the highest-value CI signal.
+
+The eval harness remains in-repo as a manual tool (`python evals/run.py`) and as a reference artifact for the LINQ best-practice posture. Re-enable in a follow-up PR once a remote is configured and an API-key secret is provisioned.
 
 ## Consequences
 
