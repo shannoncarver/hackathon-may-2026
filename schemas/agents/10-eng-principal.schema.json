@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/10-eng-principal.schema.json",
+  "title": "Engineering Principal Output Contract",
+  "description": "Output schema for the eng-principal sub-agent. Coordinator validates every response against this schema.",
+  "type": "object",
+  "required": ["contract_version", "summary", "verdict", "concerns", "alternatives", "artifacts", "references", "next_steps"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "verdict": {
+      "enum": ["approve", "approve-with-changes", "request-changes", "reject"],
+      "description": "Overall review verdict on the proposed change."
+    },
+    "concerns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "severity", "area", "evidence", "recommendation"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["premature-abstraction", "missing-seam", "leaky-abstraction", "scope-creep", "convention-violation", "missing-trade-off", "duplicated-responsibility", "other"] },
+          "severity": { "enum": ["info", "low", "medium", "high"] },
+          "area": { "type": "string", "description": "File path, ADR id, or design area." },
+          "evidence": { "type": "string" },
+          "recommendation": { "type": "string" }
+        }
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "description": "Design alternatives considered. Empty array is valid for trivial reviews.",
+      "items": {
+        "type": "object",
+        "required": ["approach", "tradeoff", "verdict"],
+        "additionalProperties": false,
+        "properties": {
+          "approach": { "type": "string" },
+          "tradeoff": { "type": "string" },
+          "verdict": { "enum": ["preferred", "viable", "rejected"] }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["agent", "skill", "schema", "rubric", "adr", "mcp-config", "doc", "test", "code", "other"] }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["owner", "action", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "owner": { "type": "string" },
+          "action": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  }
+}
