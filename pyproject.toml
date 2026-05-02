@@ -15,5 +15,12 @@ dev = [
   "inspect-ai>=0.3.50",
 ]
 
+[tool.setuptools]
+# This project is a config tree, not a Python package — `pip install -e .` is
+# only used to install the declared dependencies for tests. Telling setuptools
+# there are zero modules to install disables flat-layout auto-discovery, which
+# would otherwise fail on top-level dirs like evals/, schemas/, knowledge/.
+py-modules = []
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
