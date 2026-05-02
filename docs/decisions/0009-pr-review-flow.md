@@ -1,4 +1,10 @@
-# ADR-0009 — Structural changes go through PR review
+---
+status: Accepted
+date: 2026-05-01
+category: process
+---
+
+# Decision 0009 — Structural changes go through PR review
 
 **Status:** Accepted (2026-05-01)
 
@@ -13,7 +19,7 @@ All structural changes (new agents, new pillars, MCP bumps, schema changes) land
 ## Consequences
 
 - Slower velocity for structural changes — but those are the changes where slowness pays off.
-- CI runs `pytest tests/` on every PR; schema/structural failures block merge. Eval harness gating in CI is deferred for the hackathon (see ADR-0011 amendment); the harness remains available as a manual tool.
+- CI runs `pytest tests/` on every PR; schema/structural failures block merge. Eval harness gating in CI is deferred for the hackathon (see Decision 0011 amendment); the harness remains available as a manual tool.
 - We accept that the demo period may need a hotfix path (a `hotfix/*` branch with expedited review) — to be defined if needed.
 
 ## Sources

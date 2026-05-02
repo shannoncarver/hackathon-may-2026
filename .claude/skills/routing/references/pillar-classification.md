@@ -10,7 +10,7 @@ The six project pillars from [CLAUDE.md](../../../../CLAUDE.md), with disambigua
 
 ## 2. Repo structure
 **About:** directory layout, naming conventions, scaffolding decisions.
-**Where it lives:** the tree itself, plus ADRs in `docs/architecture/`.
+**Where it lives:** the tree itself, plus decision records in `docs/decisions/`.
 **Triggers:** "where should this go", "scaffold X", "rename folder".
 
 ## 3. Documentation

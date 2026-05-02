@@ -16,6 +16,6 @@ Canonical example landed: `17-eng-ai`. Other 13 agents added in follow-up PRs (o
 - Engineering principal (`10-eng-principal`) — review
 
 ## Related
-- [ADR-0001 — Specialist location](../architecture/0001-specialist-location.md)
-- [ADR-0002 — Coordinator placement](../architecture/0002-coordinator-placement.md)
+- [Decision 0001 — Specialist location](../decisions/0001-specialist-location.md)
+- [Decision 0002 — Coordinator placement](../decisions/0002-coordinator-placement.md)
 - [Developer onboarding — adding a sub-agent](../developer/onboarding.md)

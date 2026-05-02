@@ -1,4 +1,10 @@
-# ADR-0001 — Specialists live in `.claude/agents/`
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0001 — Specialists live in `.claude/agents/`
 
 **Status:** Accepted (2026-05-01)
 

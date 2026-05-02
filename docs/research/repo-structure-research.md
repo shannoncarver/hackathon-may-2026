@@ -164,7 +164,7 @@ hackathon-may-2026/
 ├── MCP_VERSION_CHANGELOG.md           # Bumps + reasons (legal-orchestrator pattern)
 ├── docs/                              # Shared, human-readable knowledge
 │   ├── research/                      # Pre-decision research (this file lives here)
-│   ├── architecture/                  # Decision records (one ADR per structural choice)
+│   ├── decisions/                     # Decision records (one record per structural choice)
 │   ├── pillars/                       # One brief per project pillar (six files)
 │   ├── stakeholder/                   # Demo narrative, presentation script, screenshots
 │   ├── developer/                     # Onboarding, contribution guide, run-the-system
@@ -224,7 +224,7 @@ hackathon-may-2026/
 | Pillar | Where it lives | Why |
 | --- | --- | --- |
 | **1. Knowledge base** | `knowledge/linq-products/` and `knowledge/demo-domains/` (raw buckets); `.claude/skills/<name>/references/` (per-skill curated extracts) | Three-ring model from public repos: shared raw, per-skill curated, per-run runtime. Keeps cold-storage knowledge separate from active agent context. |
-| **2. Repo structure** | The whole tree, with [`docs/architecture/`](#) capturing ADRs for each structural decision | Numeric-prefixed flat agents, triplet-equivalent (`agents/`, `commands/`, `skills/` under `.claude/`), and explicit MCP pinning — all observed conventions. |
+| **2. Repo structure** | The whole tree, with [`docs/decisions/`](#) capturing decision records for each structural decision | Numeric-prefixed flat agents, triplet-equivalent (`agents/`, `commands/`, `skills/` under `.claude/`), and explicit MCP pinning — all observed conventions. |
 | **3. Documentation** | `docs/{stakeholder,developer,agent}/` | Three audiences, three folders. Stakeholder = demo narrative; developer = onboarding; agent = long-form operating instructions that feed back into agent prompts. |
 | **4. Agent definitions** | `.claude/agents/*.md` (system prompts) + `schemas/agents/*.schema.json` (I/O contracts) + `docs/agent/*.md` (long-form operating manuals) | Frontmatter is concise; schema is the contract; long-form lives in `docs/agent/` and is referenced from prompts to keep frontmatter under context limits. |
 | **5. Skills management** | `.claude/skills/<name>/` (folders with `SKILL.md` + `references/` + optional `scripts/`) | Anthropic's canonical layout. Versioning via git; assignment to agents is implicit through prompt references. |
@@ -243,7 +243,7 @@ hackathon-may-2026/
 
 ### Project posture (cross-cutting)
 
-This repo is intended as a **LINQ-internal reference project for AI-driven development best practices**, not just a hackathon demo. Where a recommendation has a "lightweight for hackathon" branch and a "thorough industry-standard" branch, **default to the thorough one.** This decision shapes every other decision below — eval harness, trust boundary, schemas, ADRs, traces all stay in scope.
+This repo is intended as a **LINQ-internal reference project for AI-driven development best practices**, not just a hackathon demo. Where a recommendation has a "lightweight for hackathon" branch and a "thorough industry-standard" branch, **default to the thorough one.** This decision shapes every other decision below — eval harness, trust boundary, schemas, decision records, traces all stay in scope.
 
 ### Resolved Decisions (2026-05-01)
 

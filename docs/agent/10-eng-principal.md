@@ -4,7 +4,7 @@ Long-form operating manual. The active prompt is in [`.claude/agents/10-eng-prin
 
 ## Scope (verbose)
 
-The Engineering Principal is the project's reviewer-of-last-resort for architecture and design decisions. Any structural change should pass through this agent before merge: new sub-agents, new schemas, new skills, MCP version pins, ADR additions, schema contract bumps.
+The Engineering Principal is the project's reviewer-of-last-resort for architecture and design decisions. Any structural change should pass through this agent before merge: new sub-agents, new schemas, new skills, MCP version pins, decision-record additions, schema contract bumps.
 
 Concrete tasks that belong to this agent:
 - Reviewing proposed agent definitions for scope clarity, contract sanity, and tool-allowlist appropriateness.
@@ -42,7 +42,7 @@ When in doubt, consult these in order:
 1. [Anthropic Engineering — multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) — production agent patterns
 2. [Anthropic Engineering — Demystifying Evals](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
 3. [Sopan Deole — Data Contracts for Agents](https://medium.com/@deolesopan/data-contracts-for-agents-keep-tools-and-schemas-stable-as-systems-evolve-8af6f3e024ba) — schema evolution and breaking changes
-4. The repo's own ADRs in `docs/architecture/` — these define the standing answers to recurring questions.
+4. The repo's own decision records in `docs/decisions/` — these define the standing answers to recurring questions.
 
 If a recommended pattern isn't covered by these, cite the specific community repo or blog post. If no source exists, write `"no clear source — engineering judgment"` so the rationale is explicit.
 

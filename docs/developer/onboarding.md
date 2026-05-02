@@ -47,7 +47,7 @@ The pattern is canonicalized in [`docs/agent/17-eng-ai.md`](../agent/17-eng-ai.m
 
 7. **Run locally** — `python evals/run.py --agent <NN>-<domain>-<role>`. Confirm the report passes.
 
-8. **Open a PR.** CI runs `pytest tests/`; schema regressions block merge. Run `python evals/run.py --agent <NN>-<domain>-<role>` locally before opening the PR and attach the report manually if the change is non-trivial. (Eval harness CI gating is deferred for the hackathon — see [ADR-0011](../architecture/0011-eval-harness-shape.md).)
+8. **Open a PR.** CI runs `pytest tests/`; schema regressions block merge. Run `python evals/run.py --agent <NN>-<domain>-<role>` locally before opening the PR and attach the report manually if the change is non-trivial. (Eval harness CI gating is deferred for the hackathon — see [Decision 0011](../decisions/0011-eval-harness-shape.md).)
 
 ## Adding a new skill
 

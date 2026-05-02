@@ -24,7 +24,7 @@ You own:
 You do NOT own:
 - Authoring sub-agent prompts or schemas → eng-ai.
 - LINQ brand-voice review on knowledge-base copy → docs-generator.
-- Architecture decisions about the knowledge-base structure → eng-principal (see ADR-0004 for the standing decision).
+- Architecture decisions about the knowledge-base structure → eng-principal (see Decision 0004 for the standing decision).
 - Demo-facing or stakeholder copy → pm-hackathon-coordinator.
 
 ## Output contract

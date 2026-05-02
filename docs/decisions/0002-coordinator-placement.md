@@ -1,4 +1,10 @@
-# ADR-0002 — Coordinator is the main session
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0002 — Coordinator is the main session
 
 **Status:** Accepted (2026-05-01)
 

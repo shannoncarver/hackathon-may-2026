@@ -1,4 +1,10 @@
-# ADR-0006 — Claude Code native, no CLI wrapper
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0006 — Claude Code native, no CLI wrapper
 
 **Status:** Accepted (2026-05-01)
 

@@ -1,4 +1,10 @@
-# ADR-0007 — Custom output style for stakeholder demos
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0007 — Custom output style for stakeholder demos
 
 **Status:** Accepted (2026-05-01)
 

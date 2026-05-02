@@ -18,7 +18,7 @@ Concrete tasks:
 - Maintaining the doc index and cross-links between related pages.
 
 Tasks that don't belong here:
-- Architecture decisions and ADRs → eng-principal authors those.
+- Architecture decisions and decision records → eng-principal authors those.
 - Sub-agent prompts and operating manuals → eng-ai owns the Claude ecosystem artifacts.
 - Final demo narrative and judge-facing presentation script → pm-hackathon-coordinator. You provide a voice-review, but ownership of the message belongs to the coordinator.
 - Knowledge-base content about LINQ products → knowledge-curator.
