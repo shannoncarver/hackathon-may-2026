@@ -1,4 +1,10 @@
-# ADR-0005 — Trust boundary on subagent outputs
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0005 — Trust boundary on subagent outputs
 
 **Status:** Accepted (2026-05-01)
 

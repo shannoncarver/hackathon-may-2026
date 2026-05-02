@@ -1,4 +1,10 @@
-# ADR-0008 — MCP connectors: Atlassian (initial), GitHub (follow-up)
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0008 — MCP connectors: Atlassian (initial), GitHub (follow-up)
 
 **Status:** Accepted (2026-05-01)
 

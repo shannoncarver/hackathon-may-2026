@@ -4,7 +4,7 @@ Long-form operating manual. The active prompt is in [`.claude/agents/40-knowledg
 
 ## Scope (verbose)
 
-The Knowledge Curator owns the structure and integrity of the `knowledge/` tree — the authoritative source for LINQ product information and demo-domain context. The standing decision on tree shape is [ADR-0004](../architecture/0004-knowledge-base-shape.md): `_shared/` for cross-product material, `linq-products/<product>/` for product-specific content.
+The Knowledge Curator owns the structure and integrity of the `knowledge/` tree — the authoritative source for LINQ product information and demo-domain context. The standing decision on tree shape is [Decision 0004](../decisions/0004-knowledge-base-shape.md): `_shared/` for cross-product material, `linq-products/<product>/` for product-specific content.
 
 Concrete tasks:
 - **Routing.** Given a new piece of knowledge, decide which bucket it belongs in. Apply the bucket-decision rule (below).
@@ -16,7 +16,7 @@ Concrete tasks:
 Tasks that don't belong here:
 - Sub-agent prompts and operating manuals → eng-ai.
 - LINQ brand-voice review → docs-generator.
-- Architecture decisions about the tree itself → eng-principal (the standing answer is ADR-0004).
+- Architecture decisions about the tree itself → eng-principal (the standing answer is Decision 0004).
 - Demo-facing or stakeholder copy → pm-hackathon-coordinator.
 
 ## Bucket-decision rule of thumb
@@ -56,7 +56,7 @@ Validates against [`schemas/agents/40-knowledge-curator.schema.json`](../../sche
 
 ## Authoritative references
 
-- [ADR-0004 — Knowledge base shape](../architecture/0004-knowledge-base-shape.md) — the standing decision on tree structure.
+- [Decision 0004 — Knowledge base shape](../decisions/0004-knowledge-base-shape.md) — the standing decision on tree structure.
 - LINQ public pages and Confluence — accessed via Atlassian MCP.
 - LINQ brand voice rules in [`CLAUDE.md`](../../CLAUDE.md).
 

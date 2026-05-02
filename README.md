@@ -36,7 +36,7 @@ claude
 | [`.mcp.json`](.mcp.json) | MCP server registry, version-pinned. |
 | [`schemas/agents/`](schemas/agents/) | JSON-schema input/output contracts. |
 | [`evals/`](evals/) | Eval harness — per-agent, end-to-end, judge rubrics. |
-| [`docs/architecture/`](docs/architecture/) | Architecture decision records (ADRs). |
+| [`docs/decisions/`](docs/decisions/) | Decision records (architecture, process, and posture). |
 | [`docs/pillars/`](docs/pillars/) | One brief per project pillar (six pillars). |
 | [`knowledge/`](knowledge/) | Domain knowledge buckets — one folder per LINQ product, plus `_shared/`. |
 
@@ -45,7 +45,7 @@ claude
 - Ask before hard-to-reverse decisions (directory layout, agent contracts, MCP version bumps).
 - Cite sources for any pattern pulled from Anthropic docs or community repos.
 - Identify the project pillar at the start of every task.
-- Capture structural decisions as ADRs in [`docs/architecture/`](docs/architecture/).
+- Capture structural decisions as decision records in [`docs/decisions/`](docs/decisions/).
 
 See [`CLAUDE.md`](CLAUDE.md) for the full set of conventions and brand/voice rules.
 

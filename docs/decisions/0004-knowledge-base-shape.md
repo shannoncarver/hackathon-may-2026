@@ -1,4 +1,10 @@
-# ADR-0004 — Knowledge base: one folder per LINQ product plus `_shared/`
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0004 — Knowledge base: one folder per LINQ product plus `_shared/`
 
 **Status:** Accepted (2026-05-01)
 

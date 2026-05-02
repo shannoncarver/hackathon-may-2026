@@ -1,4 +1,10 @@
-# ADR-0010 — Reference-quality posture (no hackathon shortcuts)
+---
+status: Accepted
+date: 2026-05-01
+category: posture
+---
+
+# Decision 0010 — Reference-quality posture (no hackathon shortcuts)
 
 **Status:** Accepted (2026-05-01)
 
@@ -15,7 +21,7 @@ Default to the thorough branch. Specifically:
 - Pinned MCP versions with changelog.
 - JSON schemas for every agent's I/O contract; runtime validation.
 - Full traces (`traces/<run-id>.jsonl`) for post-hoc debugging.
-- ADRs in `docs/architecture/` for every structural decision.
+- Decision records in `docs/decisions/` for every structural decision.
 
 If a recommendation is "fine for production, overkill for a demo," we flip it: this is meant to look like production.
 

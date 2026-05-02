@@ -7,7 +7,7 @@ Structured information about LINQ products and demo domains.
 - [`knowledge/linq-products/<product>/`](../../knowledge/linq-products/) — per-product (added in follow-up tasks)
 
 ## Status
-Empty scaffold. Product folders pending — see [ADR-0004](../architecture/0004-knowledge-base-shape.md).
+Empty scaffold. Product folders pending — see [Decision 0004](../decisions/0004-knowledge-base-shape.md).
 
 ## Owners
 - Knowledge curator (`40-knowledge-curator`) — primary
@@ -15,5 +15,5 @@ Empty scaffold. Product folders pending — see [ADR-0004](../architecture/0004-
 - Docs generator (`30-docs-generator`) — secondary
 
 ## Related
-- [ADR-0004 — Knowledge base shape](../architecture/0004-knowledge-base-shape.md)
+- [Decision 0004 — Knowledge base shape](../decisions/0004-knowledge-base-shape.md)
 - [Research summary](../research/repo-structure-research.md)

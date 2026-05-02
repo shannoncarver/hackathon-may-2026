@@ -1,4 +1,10 @@
-# ADR-0011 — Eval harness: hand-rolled `run.py` + Inspect AI for e2e
+---
+status: Accepted
+date: 2026-05-01
+category: architecture, process
+---
+
+# Decision 0011 — Eval harness: hand-rolled `run.py` + Inspect AI for e2e
 
 **Status:** Accepted (2026-05-01)
 
@@ -29,7 +35,7 @@ The eval harness remains in-repo as a manual tool (`python evals/run.py`) and as
 ## Consequences
 
 - ~3 days of distributed build effort for the reference-quality version.
-- Both layers cite into our `docs/architecture/` and `docs/research/` so future readers see the rationale.
+- Both layers cite into our `docs/decisions/` and `docs/research/` so future readers see the rationale.
 - The hand-rolled `run.py` is intentionally small and readable — it's a teaching artifact, not just a tool.
 
 ## Sources

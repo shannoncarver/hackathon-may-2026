@@ -1,4 +1,10 @@
-# ADR-0003 — No plugin packaging (yet)
+---
+status: Accepted
+date: 2026-05-01
+category: architecture
+---
+
+# Decision 0003 — No plugin packaging (yet)
 
 **Status:** Accepted (2026-05-01)
 
