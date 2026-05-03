@@ -45,3 +45,62 @@ def test_eng_ai_sample_output_validates() -> None:
         ],
     }
     Draft202012Validator(schema).validate(sample)
+
+
+def test_knowledge_curator_v2_sample_output_validates() -> None:
+    """Regression test for the v2.0.0 contract introduced by Decision 0013.
+
+    Exercises the new bucket_decision='entity' enum and the updated
+    artifacts[].kind values (entity, source-summary, raw-copy, log-entry,
+    index-update). Guards against accidental rollback to v1.
+    """
+    schema = json.loads((SCHEMA_DIR / "40-knowledge-curator.schema.json").read_text())
+    sample = {
+        "contract_version": "2.0.0",
+        "summary": "Ingested Anthropic sub-agents doc; created one entity, one source summary, one raw capture; updated log and index.",
+        "bucket_decision": "entity",
+        "target_path": "knowledge/wiki/entities/sub-agent.md",
+        "artifacts": [
+            {
+                "path": "knowledge/raw/sources/anthropic-sub-agents-2026-05-03.md",
+                "kind": "raw-copy",
+                "change": "created",
+                "excerpt": "Condensed-with-citation copy of the public Claude Code sub-agents doc.",
+            },
+            {
+                "path": "knowledge/wiki/sources/anthropic-sub-agents.md",
+                "kind": "source-summary",
+                "change": "created",
+            },
+            {
+                "path": "knowledge/wiki/entities/sub-agent.md",
+                "kind": "entity",
+                "change": "created",
+            },
+            {
+                "path": "knowledge/wiki/log.md",
+                "kind": "log-entry",
+                "change": "modified",
+            },
+            {
+                "path": "knowledge/wiki/index.md",
+                "kind": "index-update",
+                "change": "modified",
+            },
+        ],
+        "gaps": [],
+        "references": [
+            {
+                "url": "https://code.claude.com/docs/en/sub-agents",
+                "relevance": "canonical Anthropic source for the sub-agent primitive; ingested as the worked example for Decision 0013",
+            }
+        ],
+        "next_steps": [
+            {
+                "owner": "user",
+                "action": "Confirm the worked example renders correctly from index → entity → source → raw.",
+                "why": "Verifies the three-layer wiki pattern resolves end-to-end before further ingest.",
+            }
+        ],
+    }
+    Draft202012Validator(schema).validate(sample)

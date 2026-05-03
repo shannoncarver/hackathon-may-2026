@@ -31,14 +31,16 @@ claude
 | --- | --- |
 | [`CLAUDE.md`](CLAUDE.md) | Coordinator project context — auto-loaded by Claude Code. |
 | [`.claude/agents/`](.claude/agents/) | Sub-agent definitions (one Markdown file each). |
+| [`.claude/commands/`](.claude/commands/) | Project slash commands — `/kb-ingest`, `/kb-lint`. |
 | [`.claude/skills/`](.claude/skills/) | Reusable how-to knowledge as `SKILL.md` folders. |
+| [`.claude/rules/`](.claude/rules/) | Path-loaded rules — coordination, knowledge base. |
 | [`.claude/output-styles/demo.md`](.claude/output-styles/demo.md) | Stakeholder-facing presentation format. |
 | [`.mcp.json`](.mcp.json) | MCP server registry, version-pinned. |
 | [`schemas/agents/`](schemas/agents/) | JSON-schema input/output contracts. |
 | [`evals/`](evals/) | Eval harness — per-agent, end-to-end, judge rubrics. |
 | [`docs/decisions/`](docs/decisions/) | Decision records (architecture, process, and posture). |
 | [`docs/pillars/`](docs/pillars/) | One brief per project pillar (six pillars). |
-| [`knowledge/`](knowledge/) | Domain knowledge buckets — one folder per LINQ product, plus `_shared/`. |
+| [`knowledge/`](knowledge/) | Three-layer LLM-wiki — `raw/` (immutable sources), `wiki/` (LLM-maintained entities/concepts/sources/synthesis), `SCHEMA.md` (canonical conventions). See [`knowledge/SCHEMA.md`](knowledge/SCHEMA.md). |
 
 ## Working conventions
 
@@ -46,6 +48,15 @@ claude
 - Cite sources for any pattern pulled from Anthropic docs or community repos.
 - Identify the project pillar at the start of every task.
 - Capture structural decisions as decision records in [`docs/decisions/`](docs/decisions/).
+
+## Adding knowledge
+
+The knowledge base is a three-layer wiki under [`knowledge/`](knowledge/) — see [`knowledge/SCHEMA.md`](knowledge/SCHEMA.md) for the canonical conventions. Two slash commands handle the everyday flow:
+
+- **`/kb-ingest <URL-or-path>`** — add a knowledge source. Handles public URLs, auth-required Confluence/Jira pages (via the Atlassian MCP), files already in the repo, and files anywhere on disk. The command classifies the reference, handles MCP auth, and dispatches the [knowledge-curator](.claude/agents/40-knowledge-curator.md) to write the artifacts.
+- **`/kb-lint`** — health-check the wiki. Surfaces orphan raw files, broken links, stale claims, contradictions, bidirectional drift, unknown product tags, and frontmatter completeness issues. Read-only — does not auto-fix.
+
+Operational protocol: [`.claude/skills/kb-ingest/SKILL.md`](.claude/skills/kb-ingest/SKILL.md) and [`.claude/skills/kb-ingest/references/source-classification.md`](.claude/skills/kb-ingest/references/source-classification.md).
 
 See [`CLAUDE.md`](CLAUDE.md) for the full set of conventions and brand/voice rules.
 

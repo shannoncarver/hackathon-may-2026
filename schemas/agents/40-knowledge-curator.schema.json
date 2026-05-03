@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://linq.com/hackathon-may-2026/schemas/agents/40-knowledge-curator.schema.json",
   "title": "Knowledge Curator Output Contract",
-  "description": "Output schema for the knowledge-curator sub-agent.",
+  "description": "Output schema for the knowledge-curator sub-agent. v2.0.0 reflects the three-layer wiki pattern from Decision 0013: content-type buckets (entity/concept/source/synthesis) replace the v1 product-vs-shared bucketing.",
   "type": "object",
   "required": ["contract_version", "summary", "bucket_decision", "target_path", "artifacts", "gaps", "references", "next_steps"],
   "additionalProperties": false,
@@ -13,11 +13,12 @@
     },
     "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
     "bucket_decision": {
-      "enum": ["shared", "product-specific", "both", "flag-for-review"]
+      "enum": ["entity", "concept", "source", "synthesis", "flag-for-review"],
+      "description": "Which content-type bucket the new or updated knowledge belongs in. 'flag-for-review' if ambiguous; surface to the user or eng-principal."
     },
     "target_path": {
       "type": "string",
-      "description": "Repo-relative path where the knowledge should live. Use 'unable to determine' if bucket_decision is 'flag-for-review'."
+      "description": "Repo-relative path under knowledge/wiki/<bucket>/<slug>.md or knowledge/raw/sources/<file>. Use 'unable to determine' if bucket_decision is 'flag-for-review'."
     },
     "artifacts": {
       "type": "array",
@@ -27,7 +28,7 @@
         "additionalProperties": false,
         "properties": {
           "path": { "type": "string" },
-          "kind": { "enum": ["product-overview", "process-doc", "glossary", "persona", "integration", "policy", "stub", "index", "other"] },
+          "kind": { "enum": ["entity", "concept", "source-summary", "synthesis", "raw-copy", "raw-stub", "log-entry", "index-update", "other"] },
           "change": { "enum": ["created", "modified", "moved", "reviewed"] },
           "excerpt": { "type": "string", "maxLength": 1000 }
         }

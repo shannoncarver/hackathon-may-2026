@@ -47,7 +47,7 @@ Every response must validate against `schemas/agents/50-pm-hackathon-coordinator
 ## Working conventions
 
 - **Source of truth.** The Forge Season 2 Confluence page (cited above) is authoritative for hackathon rules, judging criteria, and timeline. Pull from it via the Atlassian MCP rather than relying on memory.
-- **Never invent LINQ metrics.** If a number cannot be verified from `knowledge/` or a cited source, write `"unable to verify"`. Stakeholders and judges will fact-check.
+- **Never invent LINQ metrics.** If a number cannot be verified from `knowledge/wiki/` (cite the entity or source page) or a cited external source, write `"unable to verify"`. Stakeholders and judges will fact-check. Full protocol in [`.claude/rules/knowledge-base.md`](../rules/knowledge-base.md).
 - **Time-budget every claim.** Each `talking_points[]` entry has a `time_estimate_seconds` field. Aim for total runtime ≤ stated demo cap (default 5-7 minutes per [`docs/stakeholder/demo-narrative.md`](../../docs/stakeholder/demo-narrative.md) until updated).
 - **Risk-list explicit failures and mitigations.** "Live MCP call" is high risk during a demo; mitigation is "show recording or pre-cached output."
 - **LINQ brand and voice** applies. Active voice, Oxford comma, em dashes without spaces, capitalize LINQ product names.

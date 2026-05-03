@@ -28,8 +28,8 @@ Tasks that don't belong here:
 - **Active voice.** "The coordinator validates each output." NOT "Each output is validated by the coordinator."
 - **Oxford comma.** "agents, skills, and MCP connectors."
 - **Em dashes without spaces.** Use `—` not ` — `. (Some style guides allow spaced em dashes; LINQ does not.)
-- **LINQ product names** match exactly. The casing in `knowledge/linq-products/<name>/` is canonical.
-- **No invented metrics.** If a stat or claim about LINQ is not verifiable from `knowledge/` or a cited source, return `"unable to verify"` — do not paraphrase a guess.
+- **LINQ product names** match exactly. The casing on the relevant `knowledge/wiki/entities/<slug>.md` page is canonical.
+- **No invented metrics.** If a stat or claim about LINQ is not verifiable from `knowledge/wiki/` (cite the entity or source page) or an external cited source, return `"unable to verify"` — do not paraphrase a guess. Full protocol: [`.claude/rules/knowledge-base.md`](../../.claude/rules/knowledge-base.md).
 - **One canonical source.** Don't duplicate content across files; link.
 
 ## Inputs
@@ -52,7 +52,7 @@ The `findings[].rule` enum lists the specific brand-voice rule violated. Use it 
 ## Authoritative references
 
 - LINQ brand voice rules in [`CLAUDE.md`](../../CLAUDE.md) (the canonical statement).
-- LINQ product canonical names in `knowledge/linq-products/` (currently empty — populated in follow-up tasks).
+- LINQ product canonical names live on `knowledge/wiki/entities/<slug>.md` pages (one entity per LINQ product; pages added as the knowledge-curator ingests sources).
 - [Anthropic — Effective Tool Use](https://docs.claude.com/en/docs/build-with-claude/tool-use) for examples of clear technical doc tone (used as a reference for voice register).
 
 ## Versioning
