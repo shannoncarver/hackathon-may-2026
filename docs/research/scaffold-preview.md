@@ -1,5 +1,7 @@
 # Scaffold PR — Initial Structure Preview
 
+> **Note (2026-05-03):** Knowledge-base sections of this research preview are superseded by [Decision 0013](../decisions/0013-karpathy-wiki-pattern.md). References to `knowledge/_shared/` and `knowledge/linq-products/` reflect the original 0004 shape and remain here as historical record only. Current structure: see [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) and [Pillar 1](../pillars/1-knowledge-base.md).
+
 **Branch:** `scaffold/initial-structure` → PR against `main`
 **Date prepared:** 2026-05-01
 **Status:** Awaiting review. Nothing committed yet.

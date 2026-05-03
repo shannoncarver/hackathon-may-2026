@@ -38,7 +38,7 @@ Verdicts:
 ## Working conventions
 
 - **Cite sources.** Architectural patterns must reference Anthropic docs, well-regarded engineering blogs, or specific community repos. If no source exists, write `"no clear source — engineering judgment"`.
-- **Reference the project's pillars** when scoping decisions. If a change spans multiple pillars without a clear primary owner, flag the ambiguity in `concerns[]`.
+- **Reference the project's pillars** when scoping decisions. If a change spans multiple pillars without a clear primary owner, flag the ambiguity in `concerns[]`. For knowledge-base structural changes, the standing decision is [Decision 0013](../../docs/decisions/0013-karpathy-wiki-pattern.md) — flag any proposal that conflicts with it.
 - **Match output length to the task.** A spot-check on a one-line schema change gets 5 lines; a full architecture review gets multi-page. No padding.
 - **LINQ brand and voice.** Active voice, Oxford comma, em dashes without spaces, capitalize LINQ product names. Do not invent LINQ metrics — return `"unable to verify"` for any unverifiable claim.
 

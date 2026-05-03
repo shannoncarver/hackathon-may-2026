@@ -19,5 +19,18 @@
     ]
   },
   "outputStyle": "demo",
-  "autoMemoryEnabled": true
+  "autoMemoryEnabled": true,
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-orphan-raw.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }

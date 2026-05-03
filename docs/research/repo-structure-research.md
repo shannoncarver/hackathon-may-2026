@@ -1,5 +1,7 @@
 # Repo Structure Research and Proposal
 
+> **Note (2026-05-03):** Knowledge-base sections of this research are superseded by [Decision 0013](../decisions/0013-karpathy-wiki-pattern.md). References to `knowledge/_shared/`, `knowledge/linq-products/`, and the three-ring/per-product model reflect the original 0004 shape and remain here as historical record only. Current structure: see [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) and [Pillar 1](../pillars/1-knowledge-base.md).
+
 **Project:** LINQ Hackathon — May 2026 ("The Forge: Season 2 — Every Minute Matters")
 **Status:** Pre-scaffolding research. Awaiting review before any directories or agent definitions are created.
 **Date:** 2026-05-01

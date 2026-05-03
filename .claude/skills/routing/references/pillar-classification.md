@@ -4,8 +4,8 @@ The six project pillars from [CLAUDE.md](../../../../CLAUDE.md), with disambigua
 
 ## 1. Knowledge base
 **About:** structured info about LINQ products and demo domains.
-**Where it lives:** `knowledge/_shared/`, `knowledge/linq-products/<product>/`.
-**Triggers:** "what does product X do", "lookup customer scenario", "ingest documentation".
+**Where it lives:** `knowledge/raw/` (immutable sources), `knowledge/wiki/{entities,concepts,sources,synthesis}/`, `knowledge/SCHEMA.md`. Standing decision: [Decision 0013](../../../../docs/decisions/0013-karpathy-wiki-pattern.md).
+**Triggers:** "what does product X do", "lookup customer scenario", "ingest documentation", "wiki entity", "lint the wiki".
 **Vs adjacent:** Documentation (pillar 3) is *human-authored docs about the system itself*; knowledge base is *content the system reasons over*.
 
 ## 2. Repo structure

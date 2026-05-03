@@ -56,7 +56,7 @@ This roster will evolve. Treat it as the current best understanding, not a fixed
 
 The system is built around six pillars. Most tasks map to one of these — when starting work, identify which pillar applies.
 
-1. **Knowledge base** — structured information about LINQ products and demo domains, organized into clear "knowledge buckets."
+1. **Knowledge base** — three-layer LLM-wiki: `knowledge/raw/` (immutable curated sources), `knowledge/wiki/` (LLM-maintained entities, concepts, sources, synthesis), and `knowledge/SCHEMA.md` (canonical conventions). Standing decision: [Decision 0013](docs/decisions/0013-karpathy-wiki-pattern.md).
 2. **Repo structure** — directory layout, naming conventions, and organization that scales with new agents, skills, and connectors.
 3. **Documentation** — separate tracks for developers, agents (system prompts and operating instructions), and stakeholders evaluating the demo.
 4. **Agent definitions** — qualifications, system prompts, allowed tools, input/output contracts, and inter-communication protocols.
@@ -70,6 +70,7 @@ The system is built around six pillars. Most tasks map to one of these — when 
 - **Prefer small, reviewable proposals over large speculative scaffolding.** Don't generate ten agent definitions when one example would let us validate the pattern.
 - **Capture decisions in `docs/`.** Every structural decision, link, and rationale lives in the repo so future agents and teammates can onboard without external context.
 - **Identify the pillar.** When starting a task, state which of the six pillars it belongs to. If it doesn't fit one, flag that.
+- **Knowledge base usage.** Conventions live in [`knowledge/SCHEMA.md`](knowledge/SCHEMA.md). Sub-agents that touch knowledge follow [`.claude/rules/knowledge-base.md`](.claude/rules/knowledge-base.md), which auto-loads on every dispatch. To add a source, run `/kb-ingest <URL-or-path>`. To health-check the wiki, run `/kb-lint`. Operational protocol: [`.claude/skills/kb-ingest/SKILL.md`](.claude/skills/kb-ingest/SKILL.md).
 
 ## Brand and Voice
 

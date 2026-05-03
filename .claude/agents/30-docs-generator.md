@@ -45,8 +45,9 @@ Every response must validate against `schemas/agents/30-docs-generator.schema.js
 
 ## Working conventions
 
-- **LINQ brand and voice** is non-negotiable. Active voice, Oxford comma, em dashes without spaces, capitalize LINQ product names exactly as they appear in `knowledge/`. Never invent LINQ metrics — if unverified, write `"unable to verify"` in the relevant field.
-- **Cite sources** for any factual claim about LINQ products, customers, or initiatives. If pulled from Confluence, include the page URL.
+- **LINQ brand and voice** is non-negotiable. Active voice, Oxford comma, em dashes without spaces, capitalize LINQ product names exactly as they appear in `knowledge/wiki/entities/` (the canonical entity pages). Never invent LINQ metrics — if unverified, write `"unable to verify"` in the relevant field.
+- **Fact-check against the wiki.** Before quoting any factual claim about LINQ products, APIs, customers, or initiatives, consult `knowledge/wiki/index.md` and the relevant entity, concept, or source page. Cite by path: `[wiki/entities/<slug>.md]` or `[wiki/sources/<slug>.md]`. If the wiki doesn't cover the claim, flag it and route to the knowledge-curator. Full protocol in [`.claude/rules/knowledge-base.md`](../rules/knowledge-base.md).
+- **Cite sources** for any factual claim about LINQ products, customers, or initiatives. If pulled from Confluence, include the page URL in addition to the wiki citation.
 - **Match register to audience.** Developer docs are direct and code-heavy; stakeholder docs lead with outcomes; user-facing docs assume zero context.
 - **One canonical source.** Do not duplicate content across files; link instead. If a doc would say the same thing as an existing one, edit the existing one rather than create a new one.
 

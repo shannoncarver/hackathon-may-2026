@@ -1,12 +1,14 @@
 ---
-status: Accepted
+status: Superseded
 date: 2026-05-01
+superseded_by: 0013
+superseded_on: 2026-05-03
 category: architecture
 ---
 
 # Decision 0004 — Knowledge base: one folder per LINQ product plus `_shared/`
 
-**Status:** Accepted (2026-05-01)
+**Status:** Superseded by [Decision 0013](0013-karpathy-wiki-pattern.md) on 2026-05-03. Originally accepted 2026-05-01.
 
 ## Context
 
