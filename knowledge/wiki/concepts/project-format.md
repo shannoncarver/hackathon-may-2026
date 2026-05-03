@@ -2,8 +2,13 @@
 title: "Project Format"
 kind: concept
 tags: ["hackathon", "forge", "product:cross-cutting"]
-sources: ["wiki/sources/forge-linq-hackathon-program.md"]
-related: ["wiki/entities/forge-linq-hackathon-program.md", "wiki/concepts/race-format.md"]
+sources:
+  - "wiki/sources/forge-linq-hackathon-program.md"
+  - "wiki/sources/forge-season-2-every-minute-matters.md"
+related:
+  - "wiki/entities/forge-linq-hackathon-program.md"
+  - "wiki/entities/forge-season-2-every-minute-matters.md"
+  - "wiki/concepts/race-format.md"
 created: 2026-05-03
 updated: 2026-05-03
 ---
@@ -36,7 +41,7 @@ Judges evaluate submissions on four criteria:
 3. **Feasibility** — realistic path to implementation or productization
 4. **Theme alignment** — how well the submission addresses the season's stated theme
 
-Specific judges and scoring rubric details are announced per season; they are not enumerated on the program-level page.
+Specific judges and scoring rubric details are announced per season; they are not enumerated on the program-level page. Season 2 ([`wiki/entities/forge-season-2-every-minute-matters.md`](../entities/forge-season-2-every-minute-matters.md)) replaces the four-criterion list above with its own five-criterion rubric (Problem Worth Solving, Time Compression, AI Application, Working Demo, Creativity & "Wow" Factor) — each scored 1–10 for a 50-point maximum. When reasoning about a specific season's scoring, prefer that season's entity over this concept page.
 
 ## Recognition and productization path
 

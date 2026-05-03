@@ -2,6 +2,88 @@
 
 Append-only chronological record of operations against the knowledge base. One entry per ingest, lint, or major synthesis. Format: `## [YYYY-MM-DD] <op> | <Title>`. Conventions: [`knowledge/SCHEMA.md`](../SCHEMA.md).
 
+## [2026-05-03] lint | 0 findings
+
+All 8 checks passed post-ingest of `atlassian-remote-mcp-understand`. Checks run: (1) orphans — none (14 wiki pages, all in index.md: 4 entities, 2 concepts, 8 sources, 0 synthesis); (2) orphan raw files — none (8 raw files, all referenced by a `raw_path:` field on the matching wiki source page); (3) broken links — none (new source page links, `atlassian-mcp.md` `## IP allowlisting integration` section link to `../sources/atlassian-remote-mcp-understand.md` resolves, `atlassian-remote-mcp-available-domains.md` OQ#2 relative link to `atlassian-remote-mcp-understand.md` resolves, all raw-file links in entity body resolve); (4) stale claims — none (all pages `updated: 2026-05-03`; 90-day threshold is 2026-02-02); (5) contradictions — none (team-size and judging-criterion discrepancies remain acknowledged open questions, not unresolved contradictions); (6) bidirectional drift — none (`atlassian-remote-mcp-understand.md` `entities: ["wiki/entities/atlassian-mcp.md"]` confirmed; `atlassian-mcp.md` `sources:` array entry `"wiki/sources/atlassian-remote-mcp-understand.md"` confirmed; all 14 source↔entity/concept pairs verified); (7) unknown product tags — none (only `product:cross-cutting` used as product tag across all pages; no other `product:*` tags present); (8) frontmatter completeness — none (new source page has all required source-kind fields per SCHEMA §2; no `related:` field on source-kind frontmatter). 14 wiki pages reviewed; 8 raw files reviewed. Curator: knowledge-curator.
+
+## [2026-05-03] ingest | Understand Atlassian Rovo MCP Server (admin support docs)
+
+- Source: [wiki/sources/atlassian-remote-mcp-understand.md](sources/atlassian-remote-mcp-understand.md)
+- Raw: [raw/sources/atlassian-remote-mcp-understand-2026-05-03.md](../raw/sources/atlassian-remote-mcp-understand-2026-05-03.md) (condensed-copy form — `auth_required: false`)
+- New entities: (none)
+- New concepts: (none)
+- Modified entities: [atlassian-mcp](entities/atlassian-mcp.md) — added "IP allowlisting integration" section covering: IP allowlists are configured in Atlassian Administration separately from MCP settings; verbatim blocked-IP error message; AI-tool outbound IP gotcha. Appended `atlassian-remote-mcp-understand` to `sources:` array. `serves_hosts:`, `mcp_server_name:`, `auth_required:`, `auth_tools:`, and all existing product surfaces left unchanged.
+- Modified sources: [atlassian-remote-mcp-available-domains](sources/atlassian-remote-mcp-available-domains.md) — OQ#2 (regional MCP variants) updated: the "Understand" page was the candidate source; it does NOT address regional variants; gap remains open; suggested source updated to Atlassian Trust Center or vendor inquiry.
+- **Regional-variant gap NOT closed.** The primary expectation for this ingest was that the admin "Understand" page would address regional MCP endpoints, data residency, and compliance. It does not. The documentation-gap signal itself is the most valuable artifact of this ingest — a confirmed negative that redirects the search to the Atlassian Trust Center.
+- Incremental additions: IP allowlisting integration semantics and AI-tool outbound IP gotcha (the page's only substantive new content).
+- Curator: knowledge-curator
+
+## [2026-05-03] lint | 0 findings
+
+All 8 checks passed post-ingest of `atlassian-remote-mcp-available-domains`. Checks run: (1) orphans — none (13 wiki pages, all in index.md); (2) orphan raw files — none (7 raw files, all referenced by a `raw_path:` field); (3) broken links — none (new source page links, entity `## Org admin domain allowlist` section links, and updated getting-started OQ#2 link all resolve); (4) stale claims — none (all pages `updated: 2026-05-03`); (5) contradictions — none (project-format/season-2 team-size discrepancy remains an acknowledged open question, not an unresolved contradiction); (6) bidirectional drift — none (`atlassian-remote-mcp-available-domains.md` `entities:` → `atlassian-mcp.md` confirmed; `atlassian-mcp.md` `sources:` → `atlassian-remote-mcp-available-domains.md` confirmed; all 13 source↔entity/concept pairs verified); (7) unknown product tags — none (only `product:cross-cutting` used as product tag across all pages; `atlassian-mcp.md` tags array unchanged from prior lint); (8) frontmatter completeness — none (new source page has all required source-kind fields; no `related:` field on any source-kind frontmatter; entity page has all required fields including MCP-server optional fields). 13 wiki pages reviewed; 7 raw files reviewed. Curator: knowledge-curator.
+
+## [2026-05-03] ingest | Available Atlassian Rovo MCP Server Domains (admin support docs)
+
+- Source: [wiki/sources/atlassian-remote-mcp-available-domains.md](sources/atlassian-remote-mcp-available-domains.md)
+- Raw: [raw/sources/atlassian-remote-mcp-available-domains-2026-05-03.md](../raw/sources/atlassian-remote-mcp-available-domains-2026-05-03.md) (condensed-copy form — `auth_required: false`)
+- New entities: (none)
+- New concepts: (none)
+- Modified entities: [atlassian-mcp](entities/atlassian-mcp.md) — added "Org admin domain allowlist" section documenting pre-allowlisted AI-client / partner domains, four custom pattern types, and admin UI navigation; appended `atlassian-remote-mcp-available-domains` to `sources:` array. `serves_hosts:`, `mcp_server_name:`, `auth_required:`, and `auth_tools:` left unchanged.
+- Modified sources: [atlassian-remote-mcp-getting-started](sources/atlassian-remote-mcp-getting-started.md) — OQ#2 re-framed: the available-domains page documents the AI-client OAuth allowlist mechanism, distinct from `/kb-ingest` routing (`serves_hosts:`). Original framing "may reveal additional serves_hosts: patterns" was incorrect. Documentation gap is filled; routing-extension question was never applicable.
+- Framing correction: this page lists AI-client domains (OAuth callback origins of tools connecting INTO Atlassian), not Atlassian tenant hostnames for kb-ingest routing. The two mechanisms are separate and should not be conflated.
+- Doc-namespace observation: confirmed three Atlassian doc namespaces for Rovo MCP content: `/rovo/docs/...` (legacy), `/atlassian-rovo-mcp-server/docs/...` (current user docs), `/security-and-access-policies/docs/...` (admin policies).
+- New gaps surfaced: (a) doc-namespace fragmentation — canonical URL preference not yet in kb-ingest skill or wiki; (b) which AI client domains has LINQ's org admin actually allowlisted?; (c) regional MCP variants not addressed by any ingest
+- Curator: knowledge-curator
+
+## [2026-05-03] lint | 0 findings
+
+All 8 checks passed post-ingest of `atlassian-remote-mcp-supported-tools`. Checks run: (1) orphans — none; (2) orphan raw files — none (6 raw files, all referenced); (3) broken links — none in new source page, new entity section, or updated source pages; (4) stale claims — none (all pages `updated: 2026-05-03`); (5) contradictions — none (project-format/season-2 team-size discrepancy is an acknowledged open question, not an unresolved contradiction); (6) bidirectional drift — none (`atlassian-remote-mcp-supported-tools.md` entities↔`atlassian-mcp.md` sources bidirectional link confirmed in both directions; all 6 source↔entity/concept pairs verified); (7) unknown product tags — none (`jira-service-management` and `bitbucket` on `atlassian-mcp.md` are topic tags, not `product:*` tags; only `product:cross-cutting` used as product tag across all pages); (8) frontmatter completeness — none (new source page has all required fields; no `related:` field on any source-kind page). 12 wiki pages reviewed; 6 raw files reviewed. Curator: knowledge-curator.
+
+## [2026-05-03] ingest | Atlassian Rovo MCP Server: Supported Tools
+
+- Source: [wiki/sources/atlassian-remote-mcp-supported-tools.md](sources/atlassian-remote-mcp-supported-tools.md)
+- Raw: [raw/sources/atlassian-remote-mcp-supported-tools-2026-05-03.md](../raw/sources/atlassian-remote-mcp-supported-tools-2026-05-03.md) (condensed-copy form — `auth_required: false`)
+- New entities: (none — enriched existing [atlassian-mcp](entities/atlassian-mcp.md))
+- New concepts: (none)
+- Modified entities: [atlassian-mcp](entities/atlassian-mcp.md) — added JSM and Bitbucket Cloud to product list; replaced generic "Tools exposed" section with permission-group table (15 groups, ~60 total tools); added Teamwork Graph and search_atlassian as beta surfaces; added Open Questions section; bumped `sources:` array; added `jira-service-management` and `bitbucket` tags
+- Closes: OQ#1 ("specific tool names") from both [wiki/sources/atlassian-remote-mcp-server.md](sources/atlassian-remote-mcp-server.md) and [wiki/sources/atlassian-remote-mcp-getting-started.md](sources/atlassian-remote-mcp-getting-started.md)
+- New gaps surfaced: (a) Atlassian doc-namespace migration `/rovo/docs/...` → `/atlassian-rovo-mcp-server/docs/...`; (b) JSM at LINQ — does LINQ use JSM?; (c) Bitbucket Cloud at LINQ — does LINQ use Bitbucket Cloud?; (d) `createJiraIssue` description mismatch — needs human verification
+- Curator: knowledge-curator
+
+## [2026-05-03] lint | 0 findings
+
+All 8 checks passed (orphans, broken links, stale claims, contradictions, bidirectional drift, unknown product tags, frontmatter completeness, prior-fix verification). Confirmed: `related:` field removed from `wiki/sources/atlassian-remote-mcp-server.md` frontmatter; body `## Related sources` cross-link to `atlassian-remote-mcp-getting-started.md` intact. 11 wiki pages reviewed; 5 raw files reviewed. Curator: knowledge-curator.
+
+## [2026-05-03] lint | 1 finding
+
+`wiki/sources/atlassian-remote-mcp-server.md` — non-standard `related:` frontmatter field (SCHEMA §2 source spec does not define `related:`; relationship should be expressed in the body's `## Related sources` section, as done in the getting-started source page). All other checks (orphans, orphan raw files, broken links, stale claims, contradictions, bidirectional drift, unknown product tags, required-field completeness) passed. 11 wiki pages reviewed; 5 raw files reviewed. Curator: knowledge-curator.
+
+## [2026-05-03] ingest | Atlassian Rovo MCP Server — Getting Started (support docs)
+
+- Source: [wiki/sources/atlassian-remote-mcp-getting-started.md](sources/atlassian-remote-mcp-getting-started.md)
+- Raw: [raw/sources/atlassian-remote-mcp-getting-started-2026-05-03.md](../raw/sources/atlassian-remote-mcp-getting-started-2026-05-03.md) (condensed-copy form — `auth_required: false`)
+- New entities: (none — enriched existing [atlassian-mcp](entities/atlassian-mcp.md))
+- New concepts: (none)
+- Modified entities: [atlassian-mcp](entities/atlassian-mcp.md) — added Compass to product list, current endpoint `/v1/mcp/authv2` and legacy sunset note, supported-clients list, API-token auth method
+- Partially closes: OQ#1 (capabilities now known; specific tool names still gap), OQ#2 (Compass confirmed), OQ#3 (current endpoint confirmed) from [wiki/sources/atlassian-remote-mcp-server.md](sources/atlassian-remote-mcp-server.md)
+- New gaps surfaced: "Supported tools" sub-page (specific tool names), "Available Atlassian Rovo MCP Server domains" (routing), "Setting up IDEs" (developer onboarding)
+- Curator: knowledge-curator (via /kb-ingest skill)
+
+## [2026-05-03] lint | 0 findings
+
+All 8 checks passed (orphans, orphan raw files, broken links, stale claims, contradictions, bidirectional drift, unknown product tags, frontmatter completeness). 10 wiki pages reviewed; 4 raw files reviewed. Curator: knowledge-curator.
+
+## [2026-05-03] ingest | The Forge — Season 2: Every Minute Matters (Confluence)
+
+- Source: [wiki/sources/forge-season-2-every-minute-matters.md](sources/forge-season-2-every-minute-matters.md)
+- Raw: [raw/sources/forge-season-2-every-minute-matters-2026-05-03.md](../raw/sources/forge-season-2-every-minute-matters-2026-05-03.md) (stub form — `auth_required: true`)
+- New entities: [forge-season-2-every-minute-matters](entities/forge-season-2-every-minute-matters.md)
+- New concepts: (none — Project Format concept already exists at [wiki/concepts/project-format.md](concepts/project-format.md))
+- Modified entities: [forge-linq-hackathon-program](entities/forge-linq-hackathon-program.md) — added Season 2 to `related:`, updated prize-specifics note
+- Routing: auth-required stub; URL host `confluence.atlassian.linq.com` matched `serves_hosts:` on [wiki/entities/atlassian-mcp.md](entities/atlassian-mcp.md). Atlassian MCP read tools unavailable; content retrieved via Chrome MCP fallback (user authenticated to Confluence in browser).
+- Open questions flagged: date-range discrepancy (May 4–8 vs. Monday–Thursday), prize structure, judges roster, daily schedule, team-size discrepancy (program page: 2–5; Season 2 page: 3–5)
+- Curator: knowledge-curator (via /kb-ingest skill)
+
 ## [2026-05-03] ingest | The Forge — LINQ Hackathon Program (Confluence)
 
 - Source: [wiki/sources/forge-linq-hackathon-program.md](sources/forge-linq-hackathon-program.md)
