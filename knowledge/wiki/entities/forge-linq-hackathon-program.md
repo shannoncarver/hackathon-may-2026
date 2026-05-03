@@ -7,6 +7,7 @@ sources: ["wiki/sources/forge-linq-hackathon-program.md"]
 related:
   - "wiki/concepts/race-format.md"
   - "wiki/concepts/project-format.md"
+  - "wiki/entities/forge-season-2-every-minute-matters.md"
 created: 2026-05-03
 updated: 2026-05-03
 ---
@@ -52,7 +53,7 @@ The schedule tracks LINQ's business cycle: Q2 efficiency work pays off during th
 | Season champion (Race Format) | Monthly all-hands recognition + small prize |
 | Project Format winners | Present at company all-hands; winning projects prioritized for productization |
 
-Prize details are announced per season. Current prize specifics: "unable to verify" until the Season 2 sub-page is ingested.
+Prize details are announced per season. The Season 2 event page ([`wiki/entities/forge-season-2-every-minute-matters.md`](forge-season-2-every-minute-matters.md)) does not list prize specifics — "unable to verify" until a dedicated prize announcement or follow-up source is ingested.
 
 Source: [`wiki/sources/forge-linq-hackathon-program.md`](../sources/forge-linq-hackathon-program.md).
 

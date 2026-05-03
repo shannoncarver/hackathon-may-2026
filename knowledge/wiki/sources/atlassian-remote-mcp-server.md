@@ -44,7 +44,11 @@ All claims cite [`raw/sources/atlassian-remote-mcp-server-2026-05-03.md`](../../
 
 ## Open questions for LINQ
 
-1. **Specific tool names.** The landing page does not enumerate the read tools exposed post-auth (e.g., search, fetch Jira issues, fetch Confluence pages). A deeper ingest of the getting-started guide (`https://support.atlassian.com/rovo/docs/getting-started-with-the-atlassian-remote-mcp-server/`) would surface these.
-2. **Additional products.** Are Compass, Rovo apps, or other Atlassian products reachable through the same MCP server? The landing page is silent on this.
-3. **Server endpoint spec.** The endpoints observed at runtime (`mcp.atlassian.com/v1/sse`, `mcp.atlassian.com/v1/authorize`) are not documented on this page. Atlassian support docs or the getting-started guide may confirm them officially.
+1. ~~**Specific tool names.**~~ **CLOSED** — [`wiki/sources/atlassian-remote-mcp-supported-tools.md`](atlassian-remote-mcp-supported-tools.md) (ingested 2026-05-03) enumerates all permission groups and tool names across Jira, Confluence, JSM, Bitbucket, Teamwork Graph, search_atlassian, Compass, and Shared Platform.
+2. **Additional products (closed).** Compass is explicitly supported alongside Jira and Confluence, per the getting-started guide ([`wiki/sources/atlassian-remote-mcp-getting-started.md`](atlassian-remote-mcp-getting-started.md)). Whether other Atlassian products (Rovo apps, Atlas, etc.) are reachable remains unverified.
+3. **Server endpoint spec (partially closed).** The current endpoint `https://mcp.atlassian.com/v1/mcp/authv2` is documented in the getting-started guide. The legacy SSE endpoint (`/v1/sse`) is deprecated and sunsets June 30, 2026. The `/v1/authorize` OAuth URL observed at runtime is not explicitly enumerated in the getting-started guide.
 4. **Enterprise auth flow.** Does LINQ's self-hosted Confluence instance at `confluence.atlassian.linq.com` route through the same `mcp.atlassian.com` endpoints, or does it need a separate MCP configuration? Needs confirmation before production use.
+
+## Related sources
+
+- [`wiki/sources/atlassian-remote-mcp-getting-started.md`](atlassian-remote-mcp-getting-started.md) — getting-started guide; partially answers OQ#1, OQ#2, and OQ#3 above. Ingested 2026-05-03.
