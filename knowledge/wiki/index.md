@@ -34,3 +34,7 @@ Master catalog for the LINQ Hackathon knowledge base. Every wiki page is listed 
 ## Synthesis
 
 _None yet._
+
+## Cases
+
+_None yet._ See [Decision 0015](../../docs/decisions/0015-case-as-wiki-bucket.md). Cases are written by the Tech Services debugger's `writeResolvedCase` function rather than the knowledge-curator.
