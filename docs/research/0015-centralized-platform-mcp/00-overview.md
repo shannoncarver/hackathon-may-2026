@@ -16,6 +16,7 @@
 | [`04-phase-1-poc.md`](04-phase-1-poc.md) | One-product / one-handler / one-agent POC scope with acceptance criteria |
 | [`05-open-questions.md`](05-open-questions.md) | Stakeholder decision log; each question lists the guess we'd make if forced |
 | [`role-passes/`](role-passes/) | Five raw specialist memos (audit trail; do not edit) |
+| [`deep-dives/`](deep-dives/) | Educational / further-reading docs that expand on specific design concerns. Not part of the formal review record. |
 
 The ADR itself lives at [`docs/decisions/0015-centralized-platform-mcp.md`](../../decisions/0015-centralized-platform-mcp.md).
 
