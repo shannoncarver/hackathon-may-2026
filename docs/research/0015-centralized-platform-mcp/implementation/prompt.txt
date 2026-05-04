@@ -1,0 +1,288 @@
+# Implementation Plan: Centralized Platform MCP Server — Phase-1 POC
+
+## Mission
+
+You are an implementation engineering team. Your job is to produce a complete, executable plan for building the Phase-1 POC of LINQ's centralized Platform MCP Server (Decision 0015). The architecture review is finished and the ADR is **Proposed** — the design is settled. **Do not re-litigate it.** Translate the decision into concrete CloudFormation stacks, GitHub Actions workflows, code structure, IAM trust policies, Auth0 configuration, and test strategy that an engineering team can pick up and execute starting Monday.
+
+Your output goes into `docs/research/0015-centralized-platform-mcp/implementation/` as a set of well-structured markdown artifacts. Treat the architecture review's recommendations as binding constraints.
+
+---
+
+## Required reading (do this before drafting anything)
+
+Read in this order. Each subsequent doc assumes the prior:
+
+1. `docs/decisions/0015-centralized-platform-mcp.md` — the ADR. Binding for all design decisions.
+2. `docs/research/0015-centralized-platform-mcp/00-overview.md` — TL;DR + reading order + role roster from the architecture review.
+3. `docs/research/0015-centralized-platform-mcp/04-phase-1-poc.md` — milestone-level POC scope M1–M6 and 10 acceptance criteria. **This is your scoping anchor.**
+4. `docs/research/0015-centralized-platform-mcp/01-architecture.md` — component diagram, cross-account trust diagram, three reference flows. The diagrams are authoritative.
+5. `docs/research/0015-centralized-platform-mcp/role-passes/security-iam.md` — concrete trust-policy sketch, IdentityBroker contract, audit-log JSON shape, External ID strategy.
+6. `docs/research/0015-centralized-platform-mcp/role-passes/platform.md` — DynamoDB registry schema, handler invocation contract, error envelope, onboarding workflow.
+7. `docs/research/0015-centralized-platform-mcp/role-passes/cost-reliability.md` — caching strategy, SLOs, cost model, projected scale.
+8. `docs/research/0015-centralized-platform-mcp/role-passes/mcp-integration.md` — MCP protocol fit, transport choice, server-side `tools/list` projection.
+9. `docs/research/0015-centralized-platform-mcp/role-passes/architecture.md` — verdict, alternatives, concerns to honor in implementation.
+10. `docs/research/0015-centralized-platform-mcp/03-risks-register.md` — 25 severity-rated risks. Each artifact you produce must reference the risks it protects against.
+11. `docs/research/0015-centralized-platform-mcp/05-open-questions.md` — four blocking + seven non-blocking open questions. Honor the forced-today defaults; do not silently guess.
+12. `docs/research/0015-centralized-platform-mcp/deep-dives/prompt-to-handler.md` — agent-side mechanics; informs the MCP server's request lifecycle.
+13. `docs/research/0015-centralized-platform-mcp/deep-dives/description-quality.md` — `mcp-handler-lint` rule table; informs the registration API design.
+14. `knowledge/wiki/synthesis/centralized-mcp-broker.md` — LINQ-specific composition of the underlying primitives.
+15. Wiki entities: `mcp-tool-catalog`, `mcp-authorization`, `auth0-m2m`, `oauth-token-exchange`, `sts-assume-role-external-id`, `lambda-resource-policy`.
+
+If your plan conflicts with the ADR, the ADR wins. If the ADR is silent, default to the forced-today guess in `05-open-questions.md` and tag `[ASSUMED]`.
+
+---
+
+## V1 POC scope (LOCKED — from the architecture review)
+
+- **One product, one handler, one agent.** Default POC handler: `<chosen-product>.checkUserAccess` (recommend ERP). Agent: Claude Code authenticated as M2M client `claude-code-internal`.
+- **Read-only.** No mutating handlers in V1. The `sideEffects: "read"` registry gate is enforceable.
+- **Lambda + API Gateway HTTP API** for the MCP server runtime. Single region (`us-east-1`). Multi-AZ.
+- **Lambda only** for the POC handler substrate. ECS and Step Functions adapters are M2/M3.
+- **Auth0** for human SSO and agent (M2M) identity. Use the LINQ dev tenant for the POC.
+- **No compliance certification.** Design must support adding it later (audit log shape, retention).
+- **Acceptance:** the 10 criteria in `04-phase-1-poc.md`.
+
+---
+
+## Implementation constraints (LOCKED — for this plan specifically)
+
+These constraints supplement the ADR and must be honored throughout the plan:
+
+- **CloudFormation for IaC.** Native CloudFormation YAML organized as a master template + nested stacks. **AWS SAM is acceptable** for Lambda packaging since it transpiles to CloudFormation. **Not CDK. Not Terraform.**
+- **GitHub Actions for CI/CD.** Build, test, lint, and deploy via GitHub Actions workflows. Cross-account deployment via **OIDC federation** assuming cross-account roles — no long-lived AWS access keys in repo secrets. **Not Jenkins. Not CodePipeline. Not CodeBuild.**
+- **Multi-account AWS deployment.** Platform Services account hosts the MCP server, registry, IdentityBroker, audit infrastructure. One product account hosts the POC handler and its IAM trust policy. Cross-account stack deployment requires deploy roles in both accounts.
+- **CloudFormation StackSets** is the recommended primitive for replicating common resources across product accounts at the M2+ scale. For V1 POC (one product), simple cross-account roles assumed by GitHub Actions are sufficient.
+- **Secrets via AWS Secrets Manager** in Platform Services. No secrets in code, no secrets in CloudFormation parameters as plain text. Use `{{resolve:secretsmanager:...}}` references.
+- **Lint gates in CI.** `cfn-lint` and `cfn-nag` (or equivalent) run on every PR. Lint failures block merge.
+
+---
+
+## Team composition
+
+Operate as a cross-functional implementation team. Each role owns specific deliverables; the Lead Implementation Architect synthesizes. **Surface disagreement explicitly rather than smoothing it over.**
+
+- **Lead Implementation Architect** — Plan coherence, milestone sequencing, cross-workstream dependencies, risk-of-execution review, final synthesis. Owns `00-overview.md` and `README.md`.
+- **CloudOps Engineer** — CloudFormation stack design, multi-account deployment, GitHub Actions workflows, AWS Secrets Manager, OIDC federation, ACM certificates, Route 53, observability resources. Owns `01-cloudformation.md`, `02-github-actions.md`, `10-observability-runbooks.md`, `11-repo-layout.md`.
+- **Backend / MCP Server Engineer** — Lambda code structure, MCP JSON-RPC protocol, JWT validation + JWKS caching, request lifecycle, error envelope, audit log emission. Owns `03-mcp-server.md`.
+- **Security & IAM Engineer** — Auth0 configuration (API resource, M2M apps, RBAC, Actions), IAM trust policies, KMS key for JWT signing fallback, IdentityBroker implementation, External ID handling, SCP layering. Owns `05-identity-broker.md`, `06-cross-account.md`, `09-auth0-config.md`.
+- **Platform Engineer** — DynamoDB registry CloudFormation, registration API, `mcp-handler-lint` design, sample registry entries, dispatcher abstraction skeleton. Owns `04-registry.md`.
+- **QA / Test Engineer** — Test pyramid (unit, contract, integration, E2E), local dev workflow, mock MCP server / Inspector usage, contract test rig, CI test stages. Owns `08-testing.md`. Also runs Phase C link audit.
+- **Product Handler Owner** — Sample POC handler implementation plan, mock data, handler SDK contract usage. Owns `07-poc-handler.md`. (In real life: the chosen product's team. For this plan: the Backend Engineer drafts and the Lead reviews.)
+
+---
+
+## Specific areas to plan
+
+For each area below, the owning role produces: **implementation steps → concrete artifacts (CFN snippets, code skeletons, YAML excerpts) → acceptance criteria → effort estimate (calendar days, `[ASSUMED]`) → open questions → cross-references to prior research.**
+
+### 1. AWS account topology and bootstrap (CloudOps)
+- Account topology: Platform Services + 1 product account for V1. Confirm Org membership; layer `aws:PrincipalOrgID`.
+- Bootstrap stack (deployed once per account): GitHub Actions OIDC provider, deployment role, CFN execution role, KMS key for SSM/Secrets, default log retention.
+- Cross-account deployment role trust policy (sketched concretely).
+
+### 2. CloudFormation stack hierarchy (CloudOps)
+- Master template + nested stacks: `01-network`, `02-secrets`, `03-mcp-server`, `04-registry`, `05-identity-broker`, `06-audit`, `07-product-handler-trust` (deployed to product account).
+- Parameter design (per-environment): account IDs, Auth0 tenant URL, audience, custom domain.
+- Cross-stack references via Exports. Drift detection setup.
+- Stack rollback strategy and stuck-stack recovery.
+
+### 3. GitHub Actions CI/CD pipelines (CloudOps)
+- **PR workflow:** `cfn-lint`, `cfn-nag`, unit tests, contract tests, schema validation. **No deploy on PR.**
+- **Main-branch workflow:** deploy to sandbox on merge. OIDC federation; no long-lived AWS keys.
+- **Release workflow:** deploy to prod on signed tag. (V1: prod = sandbox; the gating mechanism is recorded for V2.)
+- Reusable / callable workflows for stack deploy, test, smoke.
+- Deployment ordering: shared resources → MCP server → registry → IdentityBroker → audit → product trust.
+- Approval gates (V1 minimal; V2 GitHub environment protection rules).
+- Artifact: full GitHub Actions YAML for at least one workflow.
+
+### 4. MCP Server Lambda (Backend)
+- Recommended runtime: **Node 20 with TypeScript** for the largest MCP SDK ecosystem in 2026 `[ASSUMED]`. Provide rationale; flag as Q-IMPL.1.
+- Module structure: `src/mcp-server/{index.ts, auth.ts, routes/, errors.ts, audit.ts}`.
+- JSON-RPC dispatcher: `initialize`, `tools/list` (server-side projected by `client_id`), `tools/call` (full 10-step pipeline per `01-architecture.md`).
+- JWT validation with JWKS caching (1 h TTL).
+- `/.well-known/oauth-protected-resource` self-hosted regardless of Auth0 RFC 9728 status (closes Phase A gap #1 by design).
+- Error envelope construction with `WWW-Authenticate` header on 401.
+- Audit log emission (single per-request JSON record per security memo schema).
+- Lambda packaging via SAM build → S3 → CFN. Lambda layer for shared modules.
+- Reserved concurrency = 10 for V1.
+
+### 5. Handler Registry (Platform)
+- CloudFormation: DynamoDB table `platform-mcp-handler-registry` with `pk`/`sk` and three GSIs (`status`, `owner`, `productAccount`). Streams enabled.
+- Sample registry items inserted via CloudFormation custom resource: `<product>.checkUserAccess` v1.0.0 with `LABEL#stable` pointer.
+- Schemas in S3 (separate stack manages the bucket; schemas committed to `infra/schemas/`).
+- Registration API (Lambda + API Gateway) enforcing `mcp-handler-lint` rules from `deep-dives/description-quality.md`.
+- Lint rules → lint code structure mapping. Embedding-based semantic-collision check is **deferred to M2** (V1 POC has one tool; collision check is irrelevant).
+
+### 6. IdentityBroker (Security)
+- Decision tree for RFC 8693 implementation:
+  - **Path A — Native Auth0 RFC 8693 grant.** Best UX; depends on Open Question Q1 (Auth0 enterprise tier).
+  - **Path B — Auth0 Action minting JWT on a custom flag.** Tenant-bound; requires Action authoring.
+  - **Path C — Platform-owned Lambda signed by KMS asymmetric key.** Most flexible, highest cost; decoupled from Auth0 capabilities.
+- **Recommended default for POC:** Path C. Decoupled from open question Q1; swappable later via the same wire shape.
+- KMS key design: asymmetric (RSASSA-PSS or ECDSA P-256) in Platform Services; key policy grants only the IdentityBroker Lambda `Sign` permission; rotation policy.
+- IdentityBroker Lambda code: input validation → `kms:Sign` → JWT with `act` claim, `exp ≤ 5 min`.
+- JWKS endpoint hosted by the Platform MCP Server for handlers to verify the IdentityBroker-issued JWT.
+
+### 7. Cross-account dispatch (Security)
+- IAM trust policy on `PlatformMcpInvoker` role in product account (concrete CFN snippet building on the security memo's sketch).
+- External ID generation strategy: per-product 32-char identifier, generated at onboarding, stored in registry's product table, surfaced for product team to include in their trust policy.
+- `aws:PrincipalOrgID` condition layered on top.
+- STS session caching in MCP Server Lambda: in-process map keyed on `(productAccount, externalId)`, ~50 min effective on 1 h session.
+- Lambda dispatcher adapter: `lambda:Invoke` RequestResponse with the signed envelope.
+- Session tag strategy: `tenant_id`, `user_sub`, `agent_client_id`, `request_id` via `sts:TagSession`.
+
+### 8. Sample POC handler (Backend, with Product team in real life)
+- Pick a product (default: ERP). Define `<product>.checkUserAccess(userId, tenantId)` — minimal but realistic.
+- Sample DynamoDB table in product account with seed tenant and user records.
+- Lambda function code using the platform handler SDK (envelope wrappers, input/output schema validation, request_id propagation, structured logging).
+- Lambda IAM execution role: minimal — read on the seed table only.
+- Handler verifies the IdentityBroker-issued JWT against the platform JWKS before serving.
+- The handler's mock data is intentionally trivial; the value is exercising the full path.
+
+### 9. Testing strategy (QA)
+- **Unit tests:** JWT validation (valid/expired/wrong-aud/wrong-iss/unsigned/missing), error envelope, registry resolution, dispatcher adapter, IdentityBroker JWT shape, schema validation.
+- **Contract tests:** handler input/output diffed against registry's published schema; runs in handler repo CI.
+- **Integration tests:** deployed sandbox + real Auth0 dev tenant + real cross-account dispatch.
+- **E2E tests:** the 10 acceptance criteria from `04-phase-1-poc.md` automated in GitHub Actions.
+- **Local dev:** Docker Compose with localstack for DynamoDB; SAM local for handler invocation; real Auth0 dev tenant (mocking OAuth is more trouble than its worth).
+- **Manual smoke:** `@modelcontextprotocol/inspector` against the deployed sandbox.
+- Test framework: **Jest** if Node, **pytest** if Python.
+
+### 10. Auth0 configuration (Security)
+- API resource registration: identifier `https://mcp.linq.platform`, RS256.
+- M2M application: `claude-code-internal` with `mcp:read` placeholder scope (V1 single broad scope; M2 splits into per-product scopes once registry exists).
+- RBAC permissions for human users: e.g., `erp:read:user` (per-product per-action).
+- Action / Hook (only if Path B selected for IdentityBroker): JWT minting with `act` claim.
+- Test users in the dev tenant for the POC.
+- Coordinate with LINQ Identity team — this is a parallel workstream and **must not block** the rest of the POC build.
+
+### 11. Observability and runbooks (CloudOps)
+- CloudWatch Logs groups (Platform Services + product account).
+- **Cross-account log shipping:** CloudWatch Logs subscription filter → Kinesis Firehose → S3 in a centralized logging account, S3 Object Lock enabled (1-year retention V1 with documented upgrade path to 7-year before any compliance scope).
+- CloudWatch metrics: request count, latency P50/P95/P99 by stage, error rate by class, AssumeRole call rate, audit-log delivery lag.
+- CloudWatch dashboards: **templated** with handler as a CloudWatch dimension (per cost memo — per-handler dashboards make observability cost linear in handler count).
+- CloudWatch alarms: P95 latency breach, error rate breach, audit-log delivery lag, MCP-server Lambda concurrency at 80%.
+- Three operational runbooks in `runbooks/`:
+  - `mcp-server-unavailable.md` — degradation playbook ("operate without agent automation").
+  - `tenant-scope-rejection.md` — false-positive triage.
+  - `on-call-boundary.md` — failure-stage routing matrix from `01-architecture.md`.
+
+### 12. Repo layout, ownership, and contributing (CloudOps)
+- Recommended repo layout for V1:
+  ```
+  linq-platform-mcp/
+    .github/workflows/      # GitHub Actions
+    infra/                  # CloudFormation / SAM
+      stacks/
+      schemas/
+      params/
+    src/
+      mcp-server/           # MCP Server Lambda
+      identity-broker/      # IdentityBroker Lambda
+      registration-api/     # Registry write API
+    sdk/handler/             # Platform handler SDK (TypeScript + Python)
+    test/
+      unit/
+      integration/
+      e2e/
+    runbooks/
+    README.md
+  ```
+- Sample handler lives in the **product team's repo**, depending on `@linq/mcp-handler-sdk`.
+- CODEOWNERS: Platform team owns `infra/`, `src/`, `sdk/`, `runbooks/`. Product team owns their handler repo.
+- Branch protection on `main`: required reviews, CI green, no force push, signed commits.
+
+---
+
+## Deliverables
+
+Each artifact lands in `docs/research/0015-centralized-platform-mcp/implementation/`:
+
+| File | Owner | Content |
+|---|---|---|
+| `00-overview.md` | Lead | TL;DR, milestone calendar (M1 detailed; M2–M6 sketched at sequencing depth), repo layout summary, role roster, reading order |
+| `01-cloudformation.md` | CloudOps | Stack hierarchy, parameter design, cross-stack references, drift detection, rollback |
+| `02-github-actions.md` | CloudOps | Full workflow YAML for PR + main-branch + release; OIDC federation setup; environment promotion; secrets management |
+| `03-mcp-server.md` | Backend | Lambda code structure, request lifecycle, packaging, layers, reserved concurrency, JWKS caching, error envelope |
+| `04-registry.md` | Platform | DynamoDB CFN, registration API, `mcp-handler-lint` design, sample CFN-deployed registry items |
+| `05-identity-broker.md` | Security | RFC 8693 path decision tree, KMS key setup, JWT signing, JWKS hosting, recommended Path C for POC |
+| `06-cross-account.md` | Security | IAM trust policies (CFN sketch), External ID handling, STS caching, SCP layering, session tag strategy |
+| `07-poc-handler.md` | Backend | Sample handler implementation plan, seed data, handler SDK contract, IAM role |
+| `08-testing.md` | QA | Test pyramid, local dev (localstack + SAM local), contract tests, E2E acceptance, MCP Inspector usage |
+| `09-auth0-config.md` | Security | API resource, M2M apps, RBAC, Actions/Hooks (if Path B), parallel-workstream coordination |
+| `10-observability-runbooks.md` | CloudOps | Logs, metrics, dashboards, alarms, three operational runbooks |
+| `11-repo-layout.md` | CloudOps | Repo structure, CODEOWNERS, branch protection, contributing guide |
+| `README.md` | Lead | Folder index with one-line summaries; reading order |
+
+**Each substantive artifact (01–11) must include:**
+- **Overview** — what this artifact covers in one paragraph.
+- **Concrete artifacts** — actual CFN snippets, code skeletons, GitHub Actions YAML excerpts, JSON schemas. **Concrete beats prose.**
+- **Acceptance criteria** — observable signals when this part is done.
+- **Effort estimate** — calendar days for one engineer, marked `[ASSUMED]`.
+- **Open questions** — anything not in `05-open-questions.md` already.
+- **Cross-references** — link to relevant prior research artifact(s) by relative path.
+- **Risks protected against** — list the R-numbers from `03-risks-register.md`.
+
+---
+
+## Coordination protocol
+
+Operate this team like the architecture review team:
+
+- **Phase A — Knowledge load (sequential).** Lead reads all required-reading docs, drafts a brief shared context note, distributes to specialists.
+- **Phase B — Parallel artifact authoring.** Each specialist writes their owning artifacts. **One owner per file path.** No two specialists write the same file. Disagreements are flagged in the affected artifact under an explicit "Disagreement / open" section, never smoothed.
+- **Phase C — Synthesis (Lead).** Lead reviews all artifacts, fills `00-overview.md` and `README.md`, and reconciles cross-cutting decisions (runtime, repo layout, deployment ordering) that touch multiple specialists.
+- **Phase D — QA pass (QA Engineer).** Validates that each artifact's acceptance criteria are observable and testable. Catches missing cross-references and missing risk-register links.
+- **Phase E — Link audit (Lead).** Confirms every cross-reference resolves; every blocking open question has a forced-today fallback recorded; every R-number cited is actually mitigated by the plan.
+
+**Coordinator (you) owns the synthesis and the final go/no-go on whether the plan is executable.** Surface disagreement; do not smooth.
+
+---
+
+## Evaluation criteria
+
+A successful plan scores well on:
+
+- **Executability.** An engineer with AWS + Lambda + GitHub Actions experience can pick up any artifact and start work without further design conversation.
+- **CloudFormation correctness.** Stack ordering, cross-stack references, drift considerations, rollback paths concrete enough to parse against `cfn-lint`.
+- **GitHub Actions correctness.** Workflows account for OIDC federation, secret handling, environment promotion, and deploy ordering.
+- **Honors the ADR.** No design re-litigation. Where the ADR is silent, defaults are stated and tagged `[ASSUMED]`.
+- **Honors the locked V1 scope.** No M2/M3 substrate adapters in the POC plan; M2–M6 sketched only at the depth needed for sequencing.
+- **Open-question discipline.** Every artifact that depends on Q1–Q4 (Auth0 RFC 8693, Auth0 tier, AWS Org topology, logging account) names the dependency and the forced-today fallback.
+- **Cost discipline.** One M2M app per service identity; shared per-product IAM roles with handler-name-conditioned policies; templated dashboards with handler as a CloudWatch dimension. **No per-handler M2M apps.**
+- **Security discipline.** No secrets in CFN params; OIDC federation for GitHub Actions; least-privilege IAM; External ID + `aws:PrincipalOrgID` layered (not substituted).
+- **Risk-register linkage.** Every artifact names the R-numbers from `03-risks-register.md` it protects against.
+
+---
+
+## Out of scope for THIS plan
+
+- **Production deployment.** V1 POC deploys to sandbox only.
+- **M2–M6 detailed plans.** Sketch M2–M6 for sequencing context; full plans for M2 (registry CRUD), M3 (cross-account hardening), M4 (E2E happy path), M5 (negative tests + cache + projection), M6 (audit + runbooks) come in **subsequent prompts**.
+- **ECS / Step Functions adapters.** Lambda only for the POC handler.
+- **Multi-region.** Single region `us-east-1`.
+- **Customer-facing exposure.** Internal agents only.
+- **Compliance certification.** Designed for, not implemented.
+- **The implementation code itself.** This is the plan. Sample CFN snippets and code skeletons are illustrative scaffolding, not production-ready.
+- **Auth0 vendor evaluation.** Locked.
+- **CDK / Terraform alternatives.** Locked: CloudFormation only.
+- **CI alternatives.** Locked: GitHub Actions only.
+
+---
+
+## Working style
+
+- Mark every assumption explicitly as `[ASSUMED]` or `[CONFIRMED]`. Locked V1 scope and ADR-stated decisions are `[CONFIRMED-by-ADR]`.
+- Cite prior research artifacts by relative path. **Do not duplicate content — link to it.**
+- Prefer concrete tradeoffs and concrete CFN/code snippets over generic best-practice statements.
+- When citing an AWS service or pattern, name the failure mode it protects against (e.g., "External ID on AssumeRole → Confused Deputy across products").
+- Surface role-level disagreement in the affected artifact's "Disagreement / open" section; let the Lead Implementation Architect resolve in synthesis.
+- If a question blocks meaningful progress, flag it for the stakeholder rather than guessing — but document the guess you would make if forced.
+- LINQ brand: active voice, Oxford comma, em dashes without spaces, capitalize LINQ product names.
+- **Never invent metrics.** Return `"unable to verify"` for any unverifiable claim. AWS pricing values, when used, must cite the AWS pricing-page URL.
+
+---
+
+## Final reminder
+
+The architecture is decided. **Your job is to make it buildable.** Concrete CFN. Concrete YAML. Concrete code skeletons. Concrete acceptance criteria. Engineers should walk away with a Monday-morning task list, not a research report.
