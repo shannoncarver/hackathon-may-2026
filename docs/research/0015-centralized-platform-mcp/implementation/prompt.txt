@@ -114,14 +114,14 @@ For each area below, the owning role produces: **implementation steps → concre
 - Lint rules → lint code structure mapping. Embedding-based semantic-collision check is **deferred to M2** (V1 POC has one tool; collision check is irrelevant).
 
 ### 6. IdentityBroker (Security)
-- Decision tree for RFC 8693 implementation:
-  - **Path A — Native Auth0 RFC 8693 grant.** Best UX; depends on Open Question Q1 (Auth0 enterprise tier).
-  - **Path B — Auth0 Action minting JWT on a custom flag.** Tenant-bound; requires Action authoring.
-  - **Path C — Platform-owned Lambda signed by KMS asymmetric key.** Most flexible, highest cost; decoupled from Auth0 capabilities.
-- **Recommended default for POC:** Path C. Decoupled from open question Q1; swappable later via the same wire shape.
-- KMS key design: asymmetric (RSASSA-PSS or ECDSA P-256) in Platform Services; key policy grants only the IdentityBroker Lambda `Sign` permission; rotation policy.
-- IdentityBroker Lambda code: input validation → `kms:Sign` → JWT with `act` claim, `exp ≤ 5 min`.
-- JWKS endpoint hosted by the Platform MCP Server for handlers to verify the IdentityBroker-issued JWT.
+- **V1 implementation is LOCKED: Path C — Platform-owned KMS-signed JWT.** Auth0 RFC 8693 native grant is in early access on Auth0 Enterprise as of 2026-05-04 and is explicitly NOT used in V1. Path C uses only AWS KMS (GA since 2014) and standard JOSE primitives.
+- **Wire shape is RFC 8693-compatible** (same `sub`, `act`, `aud`, `exp` claims) so handler-side verification is portable; future migration to native RFC 8693 (if and when Auth0 promotes it to GA) is a code change in the IdentityBroker Lambda only — handlers don't change.
+- **KMS key:** asymmetric ECDSA P-256 (`ECC_NIST_P256`) in Platform Services. Smaller signatures and faster sign than RSASSA-PSS. Key policy grants only the IdentityBroker Lambda execution role `kms:Sign`. Annual rotation cadence with documented rotation procedure.
+- **IdentityBroker Lambda:** input validation (audience allowlist, non-empty permissions, tenant_id present) → `kms:Sign` → JWT assembly with `act` claim, `exp ≤ 5 min`. Recommended runtime matches the MCP server (Node 20 + TypeScript or Python 3.12).
+- **JWKS endpoint hosted by the Platform MCP Server** at `/.well-known/jwks.json`. Public key fetched once at MCP server cold start via `kms:GetPublicKey`. `Cache-Control: public, max-age=3600`.
+- **Latency optimization:** the IdentityBroker invocation runs in parallel with `sts:AssumeRole`; both depend only on the registry-resolved metadata and complete independently. Cuts ~50ms off cold-path latency.
+- **Full design rationale, JWT wire shape, KMS key configuration, comparison with Path A, future migration story:** [`docs/research/0015-centralized-platform-mcp/deep-dives/identity-broker-implementation.md`](../deep-dives/identity-broker-implementation.md).
+- **Do NOT plan a Path A or Path B fallback for V1.** Path C is the V1 implementation. Document Path A only as a future-migration option in `05-identity-broker.md`'s "Future considerations" section.
 
 ### 7. Cross-account dispatch (Security)
 - IAM trust policy on `PlatformMcpInvoker` role in product account (concrete CFN snippet building on the security memo's sketch).

@@ -4,13 +4,13 @@ Questions surfaced during the five-role review that the available context could 
 
 ## Blocks Accepted status
 
-### Q1. Does Auth0 support RFC 8693 OAuth Token Exchange natively?
+### Q1. ~~Does Auth0 support RFC 8693 OAuth Token Exchange natively?~~ **RESOLVED 2026-05-04 — non-blocking by design**
 
-- **Why it matters.** RFC 8693 is the canonical primitive for the on-behalf-of pattern that propagates the human user's identity to product handlers. The wiki ([`oauth-token-exchange`](../../../knowledge/wiki/entities/oauth-token-exchange.md)) flags Auth0 native support as unconfirmed; it may be an Enterprise feature or require a custom Auth0 Action.
+- **Resolution.** Auth0 Enterprise is confirmed to support RFC 8693, **but the feature is in early access** as of 2026-05-04. Production-critical paths must not depend on early-access features (no SLA parity, behavior may change, limited support escalation). V1 IdentityBroker uses **Path C — Platform-owned KMS-signed JWT** with an RFC 8693-compatible wire shape, fully decoupled from Auth0's RFC 8693 release timeline.
+- **Why this no longer blocks.** Path C uses only AWS KMS (GA since 2014) and standard JOSE primitives (GA since 2015). No early-access dependency. Wire shape is identical to native RFC 8693, so future migration to Auth0's RFC 8693 grant — once GA and operationally proven — is a code change in the IdentityBroker Lambda only; handlers don't change.
+- **Implementation reference.** [`deep-dives/identity-broker-implementation.md`](deep-dives/identity-broker-implementation.md) — full design rationale, JWT wire shape, KMS key configuration, JWKS endpoint, comparison with Path A, future migration story.
 - **Surfaced by.** Security & IAM, MCP / AI Integration, Architecture review.
-- **Forced answer if blocking.** Implement the V1 broker as an Auth0 Action that mints a short-lived JWT with `act` claim, signed by a Platform-owned KMS asymmetric key. The on-the-wire contract is identical to a real RFC 8693 issuance, so the implementation is swappable later without breaking handlers. **`[ASSUMED]` until LINQ Identity team confirms.**
-- **What it does NOT block.** The handler-registry schema, the dispatcher's substrate adapters, the MCP server's HTTP transport scaffolding, the POC handler. All of these can ship while this question is open.
-- **Owner to ask.** LINQ Identity / IT team.
+- **Owner to ask.** No external dependency remains. The IdentityBroker is fully Platform-owned in V1.
 
 ### Q2. What is LINQ's Auth0 enterprise tier and Machine-to-Machine application entitlement?
 

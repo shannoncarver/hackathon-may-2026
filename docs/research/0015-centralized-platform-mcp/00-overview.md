@@ -77,6 +77,8 @@ If you are doing the implementation:
 
 ## What "Proposed" means here
 
-The ADR is **Proposed**, not Accepted. It moves to Accepted when the four blocking open questions in [`05-open-questions.md`](05-open-questions.md) close — Auth0 RFC 8693 native support, LINQ Auth0 enterprise tier, AWS Org topology, and centralized logging account existence.
+The ADR is **Proposed**, not Accepted. It moves to Accepted when the three remaining blocking open questions in [`05-open-questions.md`](05-open-questions.md) close — LINQ Auth0 enterprise tier, AWS Org topology, and centralized logging account existence.
 
-Until then, the design path is committed and the V1 implementation can begin work that is independent of those four answers (registry schema, dispatcher abstraction, MCP server scaffolding, audit-log shape, POC handler) without re-litigation.
+(Q1 — Auth0 RFC 8693 support — was resolved on 2026-05-04 by selecting Path C for the IdentityBroker; the V1 design no longer depends on Auth0 RFC 8693. See [`deep-dives/identity-broker-implementation.md`](deep-dives/identity-broker-implementation.md).)
+
+Until the three remaining questions close, the design path is committed and the V1 implementation can begin work that is independent of those answers (registry schema, dispatcher abstraction, MCP server scaffolding, audit-log shape, POC handler, **and the IdentityBroker itself**) without re-litigation.
