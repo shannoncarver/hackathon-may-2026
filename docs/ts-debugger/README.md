@@ -8,28 +8,28 @@ An internal AI tool that helps LINQ Technical Services engineers find root cause
 
 Tech Services lacks direct access to Harmony-Auth's underlying state — CloudWatch Logs across 40+ Lambdas, five DynamoDB tables, OpenSearch, and the Auth0 / Cognito management APIs. Today, every "user can't log in" or "MFA looks misconfigured" ticket means filing an escalation ticket to engineering. Slow, lossy, and not scalable.
 
-The tool lets a Tech Services engineer go from a symptom (an email, a clientId, a timestamp, an error string) to a structured case file — a unified timeline assembled from every relevant signal — without leaving Claude Code or Claude Desktop.
+The tool lets a Tech Services engineer go from a symptom (an email, a clientId, a timestamp, an error string) to a structured case file — a unified timeline assembled from every relevant signal — without leaving Claude Code.
 
 ## Solution
 
-Three components, one repository:
+Two components plus a Claude Code skill, one repository:
 
 ```
 TypeScript core library (ha-debug-core)
-        ↓                          ↓
-    [CLI binary]              [stdio MCP server]
-   ha-debug ...               mcp__ha-debug__assemble_login_failure_case
-        ↑                          ↑
-   Claude Code via Bash       Claude Desktop (and Claude Code if preferred)
+              ↓
+        [CLI binary (ha-debug)]
+              ↑
+        Claude Code via Bash,
+        guided by the ts-debug skill
 ```
 
 | Component | Purpose |
 |---|---|
 | `ha-debug-core` | TypeScript library. All join logic, queries, and result shaping. Pure functions in, structured records out. |
 | `ha-debug` (CLI) | Argv-to-function shim over the core. Used by humans, scripts, and Claude Code via Bash. |
-| `ha-debug-mcp-server` (stdio MCP) | Same functions registered as MCP tools. Required for Claude Desktop; optional in Claude Code. |
+| `ts-debug` skill | Markdown skill at `.claude/skills/ts-debug/SKILL.md`. Tells Claude when to invoke `ha-debug` for which symptoms and how to interpret output. |
 
-Both transports share the core library — the marginal cost of shipping both surfaces is small, and the audience reach is doubled. See [Decision 0016 — Why both surfaces](../decisions/0016-ts-debugger-architecture.md) for the full rationale.
+The skill is what makes the CLI demo-able in Claude Code without the engineer having to remember subcommand syntax. See [Decision 0016 — Why CLI + skill, not MCP](../decisions/0016-ts-debugger-architecture.md) for the rationale and the trade-offs.
 
 ## What it does — v1
 
@@ -45,7 +45,7 @@ A Tech Services engineer notices a user wasn't prompted for MFA. The tool assemb
 
 ## Public surface
 
-The CLI subcommand list and MCP tool registry expose only three functions. Primitives stay internal — see [Decision 0016 — Public surface](../decisions/0016-ts-debugger-architecture.md) for the rationale.
+The CLI exposes only three functions as subcommands. Primitives stay internal — see [Decision 0016 — Public surface](../decisions/0016-ts-debugger-architecture.md) for the rationale.
 
 | Function | Use |
 |---|---|
@@ -55,7 +55,7 @@ The CLI subcommand list and MCP tool registry expose only three functions. Primi
 
 ## Authentication — hackathon scope
 
-The tool ships with shared read-only credentials for a non-production Harmony-Auth environment, stored in a local config file on the presenter's laptop. Both CLI and MCP server read from the same config. No per-user authentication, no SSO, no proxy. The demo runs as a single baked-in service identity.
+The tool ships with shared read-only credentials for a non-production Harmony-Auth environment, stored in a local config file on the presenter's laptop. The CLI reads from the config. No per-user authentication, no SSO, no proxy. The demo runs as a single baked-in service identity.
 
 > Production deployment will require per-user authentication — likely Microsoft Entra-federated SSO with an Auth0 / Cognito broker — captured in a follow-up ADR once the tool moves toward broader use. Out of hackathon scope per [Decision 0016 — Authentication](../decisions/0016-ts-debugger-architecture.md).
 
@@ -68,13 +68,13 @@ The case bucket and frontmatter spec are pinned in [Decision 0015](../decisions/
 ## Demo arc
 
 ```
-Tech Services engineer:
+Tech Services engineer in Claude Code:
   "User john@school.edu can't log in — failing all morning."
                         ↓
-Claude calls:
-  assembleLoginFailureCase("john@school.edu", "8h")
+Claude (guided by the ts-debug skill) runs:
+  ha-debug assemble-login-failure-case --email john@school.edu --window 8h
                         ↓
-Tool returns structured case file:
+CLI returns structured case file:
   {
     identity:  { auth0_id, cognito_sub, status: "FORCE_CHANGE_PASSWORD", ... },
     attempts:  [4 entries, all "PasswordResetRequiredException"],
@@ -88,12 +88,15 @@ Claude:
    attempts this morning all returned PasswordResetRequiredException.
    Send him a password-reset email via the Harmony-Auth admin tool."
                         ↓
-Claude:
-  writeResolvedCase(...) → wiki/cases/case-2026-05-04-...
+Claude runs:
+  ha-debug write-resolved-case --case-file ... --resolution send-password-reset-email
+                        ↓
+Result: knowledge/wiki/cases/case-2026-05-04-...md
 ```
 
 ## Out of scope (v1)
 
+- Claude Desktop support. CLI-only architecture; an MCP shim is the natural follow-up if Desktop ever becomes in-scope.
 - Per-user authentication. Hackathon scope.
 - PII redaction in `writeResolvedCase`. Deferred to a follow-up ADR.
 - Cross-product extension. The architecture is per-product; the second product is a follow-up ADR.
