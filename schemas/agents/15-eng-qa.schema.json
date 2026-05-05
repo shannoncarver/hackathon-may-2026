@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/15-eng-qa.schema.json",
+  "title": "QA / Test Engineer Output Contract",
+  "description": "Output schema for the eng-qa sub-agent. Coordinator validates every response against this schema.",
+  "type": "object",
+  "required": ["contract_version", "summary", "verdict", "deliverables", "test_pyramid", "ac_coverage", "local_dev_setup", "ci_stages", "risks_addressed", "open_questions", "references"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "verdict": { "enum": ["approve", "approve-with-changes", "request-changes"] },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["test-plan", "test-fixture", "ci-config", "doc", "other"] }
+        }
+      }
+    },
+    "test_pyramid": {
+      "type": "object",
+      "required": ["unit", "contract", "integration", "e2e"],
+      "additionalProperties": false,
+      "properties": {
+        "unit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "subject", "framework"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "subject": { "type": "string" },
+              "framework": { "enum": ["jest", "pytest", "vitest", "other"] }
+            }
+          }
+        },
+        "contract": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "schema_source", "consumer"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "schema_source": { "type": "string" },
+              "consumer": { "type": "string" }
+            }
+          }
+        },
+        "integration": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "environment", "dependencies"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "environment": { "type": "string" },
+              "dependencies": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "e2e": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "ac_id", "trigger"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "ac_id": { "type": "string" },
+              "trigger": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "ac_coverage": {
+      "type": "array",
+      "description": "Mapping of acceptance criterion → test name → expected assertion.",
+      "items": {
+        "type": "object",
+        "required": ["ac_id", "ac_title", "test_name", "expected_assertion"],
+        "additionalProperties": false,
+        "properties": {
+          "ac_id": { "type": "string" },
+          "ac_title": { "type": "string" },
+          "test_name": { "type": "string" },
+          "expected_assertion": { "type": "string" },
+          "automatable": { "type": "boolean" }
+        }
+      }
+    },
+    "local_dev_setup": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["component", "tool", "purpose"],
+        "additionalProperties": false,
+        "properties": {
+          "component": { "type": "string" },
+          "tool": { "type": "string" },
+          "purpose": { "type": "string" }
+        }
+      }
+    },
+    "ci_stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["stage", "trigger", "blocks"],
+        "additionalProperties": false,
+        "properties": {
+          "stage": { "type": "string" },
+          "trigger": { "enum": ["pull_request", "push-main", "push-tag", "manual"] },
+          "blocks": { "type": "string", "description": "What this stage blocks if it fails." }
+        }
+      }
+    },
+    "risks_addressed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["risk_id", "how"],
+        "additionalProperties": false,
+        "properties": {
+          "risk_id": { "type": "string", "pattern": "^R\\d{1,2}$" },
+          "how": { "type": "string" }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "blocking", "forced_today"],
+        "additionalProperties": false,
+        "properties": {
+          "question": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "forced_today": { "type": "string" }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    }
+  }
+}
