@@ -18,7 +18,7 @@ The wiki has five content-type buckets:
 - **`concepts/`** — abstractions, patterns, principles, frameworks. One page per idea.
 - **`sources/`** — one summary page per ingested source document. Each source page links back to the matching `raw/` file.
 - **`synthesis/`** — cross-cutting analysis that spans multiple sources, entities, or concepts. Use sparingly — synthesis pages exist when there is a load-bearing claim to make that no single source supports alone.
-- **`cases/`** — sanitized resolved debug cases produced by Tech Services debugging tools. One page per symptom-investigation-fix arc. Bucket purpose, frontmatter spec, body structure, and write workflow live in [Decision 0015](../docs/decisions/0015-case-as-wiki-bucket.md).
+- **`cases/`** — sanitized resolved debug cases produced by Tech Services debugging tools. One page per symptom-investigation-fix arc. Bucket purpose, frontmatter spec, body structure, and write workflow live in [Decision 0017](../docs/decisions/0017-case-as-wiki-bucket.md).
 
 Two index files at the wiki root:
 
@@ -122,7 +122,7 @@ updated: 2026-05-04
 ---
 ```
 
-Required fields: `title`, `kind`, `slug`, `tags`, `status`, `symptom`, `resolution`, `sources`, `created`, `updated`. Slug format: `case-YYYY-MM-DD-<short-symptom-slug>`. Full bucket spec: [Decision 0015](../docs/decisions/0015-case-as-wiki-bucket.md).
+Required fields: `title`, `kind`, `slug`, `tags`, `status`, `symptom`, `resolution`, `sources`, `created`, `updated`. Slug format: `case-YYYY-MM-DD-<short-symptom-slug>`. Full bucket spec: [Decision 0017](../docs/decisions/0017-case-as-wiki-bucket.md).
 
 ### `raw/sources/<file>` — stub form (auth-required URLs)
 
@@ -163,9 +163,9 @@ license_note: "Anthropic public docs — condensed for agent reference; cite sou
 LINQ products are tags, not folders. Use `tags: ["product:<canonical-slug>"]` on every wiki page.
 
 - The initial canonical slug is `product:cross-cutting`. It applies to anything not specific to a single LINQ product (e.g., LINQ-wide concepts, third-party tooling, methodology).
-- The canonical product-slug list lives in [Decision 0014](../docs/decisions/0014-product-slug-canonical-list.md). Initial slugs: `product:cross-cutting`, `product:harmony-auth`. New slugs are added by amending that decision.
+- The canonical product-slug list lives in [Decision 0016](../docs/decisions/0016-product-slug-canonical-list.md). Initial slugs: `product:cross-cutting`, `product:harmony-auth`. New slugs are added by amending that decision.
 - Multi-product pages get multiple product tags. There is no upper bound.
-- The lint workflow flags any `product:*` tag that is not in the [Decision 0014](../docs/decisions/0014-product-slug-canonical-list.md) canonical list.
+- The lint workflow flags any `product:*` tag that is not in the [Decision 0016](../docs/decisions/0016-product-slug-canonical-list.md) canonical list.
 
 ## 5. Ingest workflow
 
@@ -182,7 +182,7 @@ The knowledge-curator owns ingest. Every step is observable.
 
 ### Case write workflow (programmatic)
 
-The `cases/` bucket has its own write path. The Tech Services debugger's `writeResolvedCase` function (per [Decision 0016](../docs/decisions/0016-ts-debugger-architecture.md)) mirrors the steps above without invoking the `/kb-ingest` skill — cases are first-party artifacts rather than ingested external sources. Full case-write workflow: [Decision 0015](../docs/decisions/0015-case-as-wiki-bucket.md).
+The `cases/` bucket has its own write path. The Tech Services debugger's `write_resolved_case` function (per [Decision 0018](../docs/decisions/0018-ts-debugger-architecture.md)) mirrors the steps above without invoking the `/kb-ingest` skill — cases are first-party artifacts rather than ingested external sources. Full case-write workflow: [Decision 0017](../docs/decisions/0017-case-as-wiki-bucket.md).
 
 ## 6. Query workflow
 
@@ -204,7 +204,7 @@ Checks:
 - **Stale claims.** Any wiki page where `updated:` is older than 90 days. Stale is not wrong — but a fresh ingest should re-confirm it.
 - **Contradictions.** Pages with overlapping tag sets that make incompatible claims about the same entity. Surface for human review.
 - **Bidirectional drift.** A source page's `entities:` array lists `wiki/entities/foo.md`, but `foo.md`'s `sources:` array does not list the source page (or vice versa).
-- **Unknown product tags.** Any `product:*` tag not in the [Decision 0014](../docs/decisions/0014-product-slug-canonical-list.md) canonical list.
+- **Unknown product tags.** Any `product:*` tag not in the [Decision 0016](../docs/decisions/0016-product-slug-canonical-list.md) canonical list.
 - **Frontmatter completeness.** Required fields per §2 are present and non-empty.
 - **Case-specific.** For pages with `kind: case`: `status:` is one of `open`, `resolved`, `superseded`; an `open` case older than 30 days is flagged; `tags:` contains at least one `product:*` tag from the canonical list; `sources:` resolves to an existing `raw/sources/<file>.md`.
 

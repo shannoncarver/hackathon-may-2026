@@ -4,15 +4,15 @@ date: 2026-05-04
 category: knowledge-base
 ---
 
-# Decision 0014 — Canonical product-slug list
+# Decision 0016 — Canonical product-slug list
 
 **Status:** Accepted (2026-05-04)
 
 ## Context
 
-[Decision 0013](0013-karpathy-wiki-pattern.md) established that LINQ products are tags, not folders. [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §4 commits to a `tags: ["product:<canonical-slug>"]` convention but defers the canonical slug list to "a future ADR 0014." The `/kb-lint` workflow flags any `product:*` tag not in the canonical list, which means the list must exist before any product-specific page can pass lint cleanly.
+[Decision 0013](0013-karpathy-wiki-pattern.md) established that LINQ products are tags, not folders. [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §4 commits to a `tags: ["product:<canonical-slug>"]` convention but defers the canonical slug list to a future ADR. The `/kb-lint` workflow flags any `product:*` tag not in the canonical list, which means the list must exist before any product-specific page can pass lint cleanly.
 
-The Tech Services debugger work (introduced in [Decision 0016](0016-ts-debugger-architecture.md)) writes the first product-scoped material — Harmony-Auth case pages — and triggers the need for this ADR.
+The Tech Services debugger work (introduced in [Decision 0018](0018-ts-debugger-architecture.md)) writes the first product-scoped material — Harmony-Auth case pages — and triggers the need for this ADR.
 
 ## Decision
 
@@ -48,9 +48,9 @@ Adding a slug is a small change — a one-line entry in the table above plus a b
 
 ## Migration
 
-- [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §4 updated: replaces the "future ADR 0014" placeholder with a link to this decision.
+- [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §4 updated: replaces the "future ADR" placeholder with a link to this decision.
 - No existing wiki pages need retagging — `product:cross-cutting` was already the de facto canonical slug.
 
 ## History
 
-- 2026-05-04 — Initial canonical list with two slugs (`product:cross-cutting`, `product:harmony-auth`).
+- 2026-05-04 — Initial canonical list with two slugs (`product:cross-cutting`, `product:harmony-auth`). ADR originally numbered 0014; renumbered 0016 to avoid collision with `feature/auth0-logs-skill` branch (which claims 0014 for the auth0-logs-skill decision).

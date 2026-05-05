@@ -37,4 +37,4 @@ _None yet._
 
 ## Cases
 
-_None yet._ See [Decision 0015](../../docs/decisions/0015-case-as-wiki-bucket.md). Cases are written by the Tech Services debugger's `writeResolvedCase` function rather than the knowledge-curator.
+_None yet._ See [Decision 0017](../../docs/decisions/0017-case-as-wiki-bucket.md). Cases are written by the Tech Services debugger's `write_resolved_case` function rather than the knowledge-curator.

@@ -4,13 +4,13 @@ date: 2026-05-04
 category: knowledge-base
 ---
 
-# Decision 0015 — `case` as a fifth wiki bucket
+# Decision 0017 — `case` as a fifth wiki bucket
 
 **Status:** Accepted (2026-05-04)
 
 ## Context
 
-[Decision 0013](0013-karpathy-wiki-pattern.md) established four wiki buckets — `entities/`, `concepts/`, `sources/`, `synthesis/`. The Tech Services debugger ([Decision 0016](0016-ts-debugger-architecture.md)) produces a new content type — sanitized resolved debug cases — that does not fit any of the four:
+[Decision 0013](0013-karpathy-wiki-pattern.md) established four wiki buckets — `entities/`, `concepts/`, `sources/`, `synthesis/`. The Tech Services debugger ([Decision 0018](0018-ts-debugger-architecture.md)) produces a new content type — sanitized resolved debug cases — that does not fit any of the four:
 
 - Not `entity`: a case is an event with a resolution, not a real-world thing.
 - Not `concept`: a case is a specific incident, not an abstraction or pattern.
@@ -59,7 +59,7 @@ Five sections, in order:
 
 ### Write workflow
 
-A `writeResolvedCase(caseFile, hypothesis, resolution)` function in the TS debugger ([Decision 0016](0016-ts-debugger-architecture.md)) produces case pages. The workflow mirrors [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §5 (the `/kb-ingest` pipeline) programmatically, without invoking the `/kb-ingest` skill — cases are first-party artifacts, not external sources.
+A `write_resolved_case(case_file, hypothesis, resolution)` function in the TS debugger ([Decision 0018](0018-ts-debugger-architecture.md)) produces case pages. The workflow mirrors [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §5 (the `/kb-ingest` pipeline) programmatically, without invoking the `/kb-ingest` skill — cases are first-party artifacts, not external sources.
 
 Steps:
 
@@ -75,7 +75,7 @@ Steps:
 
 - Required fields present per the frontmatter spec above.
 - `status:` is one of `open`, `resolved`, `superseded`. An `open` case older than 30 days is flagged.
-- `tags:` contains at least one `product:*` tag from the [Decision 0014](0014-product-slug-canonical-list.md) canonical list.
+- `tags:` contains at least one `product:*` tag from the [Decision 0016](0016-product-slug-canonical-list.md) canonical list.
 - `sources:` resolves to an existing `raw/sources/<file>.md`.
 
 ## Consequences
@@ -89,7 +89,7 @@ Steps:
 ## Sources
 
 - [Decision 0013 — Three-layer LLM-wiki pattern](0013-karpathy-wiki-pattern.md), §1, §10.
-- [Decision 0016 — Tech Services debugger architecture](0016-ts-debugger-architecture.md) (introduces the first writer of case pages).
+- [Decision 0018 — Tech Services debugger architecture](0018-ts-debugger-architecture.md) (introduces the first writer of case pages).
 - [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) §1, §2, §5, §7.
 - knowledge-curator review (2026-05-04).
 
@@ -99,4 +99,8 @@ Steps:
 - [`knowledge/SCHEMA.md`](../../knowledge/SCHEMA.md) updated: §1 lists `cases/`, §2 adds the case frontmatter block, §5 references this ADR for the case write workflow, §7 adds the case-specific lint checks, §8 adds a Case-write row to the operations table.
 - [`knowledge/wiki/index.md`](../../knowledge/wiki/index.md) gains a `## Cases` section header (initially `_None yet._`).
 - PII redaction rules deliberately deferred. Hackathon scope per user direction (2026-05-04). A follow-up ADR will spec redaction once the tool moves toward production.
-- The `schemas/agents/40-knowledge-curator.schema.json` `bucket_decision` enum bump is deferred to the same follow-up ADR — the hackathon-scope writer (`writeResolvedCase`) targets the new bucket directly without the curator's schema needing to update first.
+- The `schemas/agents/40-knowledge-curator.schema.json` `bucket_decision` enum bump is deferred to the same follow-up ADR — the hackathon-scope writer (`write_resolved_case`) targets the new bucket directly without the curator's schema needing to update first.
+
+## History
+
+- 2026-05-04 — Initial decision. ADR originally numbered 0015; renumbered 0017 to avoid collision with `feature/auth0-logs-skill` branch (which claims 0015 for the centralized-platform-mcp decision).
