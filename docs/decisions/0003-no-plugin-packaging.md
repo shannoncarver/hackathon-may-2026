@@ -25,3 +25,9 @@ Stay standalone. No `.claude-plugin/plugin.json` manifest. Assets live at `.clau
 ## Sources
 
 - [Claude Code plugins docs](https://code.claude.com/docs/en/plugins)
+
+## History
+
+- **2026-05-01** — Decision accepted.
+- **2026-05-04** — PR #10 introduced a plugin marketplace (`linq-erp-skills`) for the `erp-authz` plugin, briefly contradicting this decision.
+- **2026-05-05** — Pivot reverted the marketplace/plugin scaffolding after `/plugin` proved unavailable in Claude Desktop's Claude Code surface. Repo back in line with this decision; skills now ship under top-level [`skills/`](../../skills/) with a `.claude/skills/` symlink for in-repo auto-loading. See [docs/plans/erp-verify-user-authorization-poc-plan.md](../plans/erp-verify-user-authorization-poc-plan.md) for the pivot record.
