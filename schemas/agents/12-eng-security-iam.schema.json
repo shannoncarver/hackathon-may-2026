@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/12-eng-security-iam.schema.json",
+  "title": "Security & IAM Engineer Output Contract",
+  "description": "Output schema for the eng-security-iam sub-agent. Coordinator validates every response against this schema.",
+  "type": "object",
+  "required": ["contract_version", "summary", "verdict", "deliverables", "iam_policies", "auth0_config", "jwt_wire_shape", "key_management", "protocol_compliance", "risks_addressed", "open_questions", "references"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "verdict": { "enum": ["approve", "approve-with-changes", "request-changes"] },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["iam-policy", "auth0-config", "jwt-spec", "kms-key-spec", "doc", "other"] }
+        }
+      }
+    },
+    "iam_policies": {
+      "type": "array",
+      "description": "Trust policies, identity-based policies, and SCPs. Each item names the failure mode each condition prevents.",
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "json", "failure_modes_prevented"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "enum": ["trust-policy", "identity-policy", "resource-policy", "scp", "session-policy"] },
+          "json": { "type": "string", "description": "JSON-stringified policy document." },
+          "failure_modes_prevented": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "auth0_config": {
+      "type": "object",
+      "required": ["api_resource", "m2m_apps", "rbac_permissions"],
+      "additionalProperties": false,
+      "properties": {
+        "api_resource": {
+          "type": "object",
+          "required": ["identifier", "signing_alg"],
+          "additionalProperties": false,
+          "properties": {
+            "identifier": { "type": "string" },
+            "signing_alg": { "enum": ["RS256", "ES256"] },
+            "rfc8707_resource_required": { "type": "boolean" }
+          }
+        },
+        "m2m_apps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["client_name", "scopes"],
+            "additionalProperties": false,
+            "properties": {
+              "client_name": { "type": "string" },
+              "scopes": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "rbac_permissions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "actions_or_hooks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "purpose"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "jwt_wire_shape": {
+      "type": "object",
+      "required": ["header", "payload_claims", "signature_alg"],
+      "additionalProperties": false,
+      "properties": {
+        "header": { "type": "object" },
+        "payload_claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["claim", "source", "purpose"],
+            "additionalProperties": false,
+            "properties": {
+              "claim": { "type": "string" },
+              "source": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        },
+        "signature_alg": { "type": "string" },
+        "max_lifetime_seconds": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "key_management": {
+      "type": "object",
+      "required": ["kms_key_spec", "key_policy_summary", "rotation"],
+      "additionalProperties": false,
+      "properties": {
+        "kms_key_spec": { "type": "string" },
+        "key_policy_summary": { "type": "string" },
+        "rotation": { "type": "string" },
+        "jwks_endpoint": { "type": "string" }
+      }
+    },
+    "protocol_compliance": {
+      "type": "array",
+      "description": "Each entry names an RFC and how the design conforms.",
+      "items": {
+        "type": "object",
+        "required": ["rfc", "compliance"],
+        "additionalProperties": false,
+        "properties": {
+          "rfc": { "type": "string" },
+          "compliance": { "type": "string" }
+        }
+      }
+    },
+    "risks_addressed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["risk_id", "how"],
+        "additionalProperties": false,
+        "properties": {
+          "risk_id": { "type": "string", "pattern": "^R\\d{1,2}$" },
+          "how": { "type": "string" }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "blocking", "forced_today"],
+        "additionalProperties": false,
+        "properties": {
+          "question": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "forced_today": { "type": "string" }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    }
+  }
+}

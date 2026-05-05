@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://linq.com/hackathon-may-2026/schemas/agents/11-eng-cloudops.schema.json",
+  "title": "CloudOps Engineer Output Contract",
+  "description": "Output schema for the eng-cloudops sub-agent. Coordinator validates every response against this schema.",
+  "type": "object",
+  "required": ["contract_version", "summary", "verdict", "deliverables", "cfn_snippets", "gha_workflows", "parameters", "cross_stack_refs", "drift_strategy", "rollback_strategy", "risks_addressed", "open_questions", "references"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "verdict": { "enum": ["approve", "approve-with-changes", "request-changes"] },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "enum": ["cfn-template", "gha-workflow", "runbook", "doc", "config", "other"] }
+        }
+      }
+    },
+    "cfn_snippets": {
+      "type": "array",
+      "description": "Concrete CFN YAML excerpts. Each snippet should be standalone enough to lint.",
+      "items": {
+        "type": "object",
+        "required": ["stack", "purpose", "yaml"],
+        "additionalProperties": false,
+        "properties": {
+          "stack": { "type": "string" },
+          "purpose": { "type": "string" },
+          "yaml": { "type": "string" },
+          "lint_status": { "enum": ["pass", "warn-with-justification", "not-run"] }
+        }
+      }
+    },
+    "gha_workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "trigger", "purpose"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "trigger": { "enum": ["pull_request", "push-main", "push-tag", "workflow_dispatch", "schedule", "reusable"] },
+          "purpose": { "type": "string" },
+          "yaml": { "type": "string" }
+        }
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "description": "Stack parameter design (per-environment).",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "purpose"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "purpose": { "type": "string" },
+          "default": { "type": "string" }
+        }
+      }
+    },
+    "cross_stack_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from_stack", "to_stack", "exported_value"],
+        "additionalProperties": false,
+        "properties": {
+          "from_stack": { "type": "string" },
+          "to_stack": { "type": "string" },
+          "exported_value": { "type": "string" }
+        }
+      }
+    },
+    "drift_strategy": { "type": "string", "minLength": 1 },
+    "rollback_strategy": { "type": "string", "minLength": 1 },
+    "risks_addressed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["risk_id", "how"],
+        "additionalProperties": false,
+        "properties": {
+          "risk_id": { "type": "string", "pattern": "^R\\d{1,2}$" },
+          "how": { "type": "string" }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "blocking", "forced_today"],
+        "additionalProperties": false,
+        "properties": {
+          "question": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "forced_today": { "type": "string" }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "relevance"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "relevance": { "type": "string" }
+        }
+      }
+    }
+  }
+}
