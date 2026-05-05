@@ -2,6 +2,18 @@
 
 Append-only chronological record of operations against the knowledge base. One entry per ingest, lint, or major synthesis. Format: `## [YYYY-MM-DD] <op> | <Title>`. Conventions: [`knowledge/SCHEMA.md`](../SCHEMA.md).
 
+## [2026-05-04] milestone | Decision 0015 M1 Phase A — `linq-platform-mcp` repo scaffolded and pushed
+
+Per cross-cutting decision **CC-2** in [`docs/research/0015-centralized-platform-mcp/implementation/00-overview.md`](../../docs/research/0015-centralized-platform-mcp/implementation/00-overview.md), the M1 Platform Services build lives in a separate repo, not in this hackathon repo. Phase A (repo scaffold per [`implementation/11-repo-layout.md`](../../docs/research/0015-centralized-platform-mcp/implementation/11-repo-layout.md) §2.1) is complete.
+
+- New repo: <https://github.com/shannoncarver/linq-platform-mcp> (public, default branch `main`).
+- Local path: `/Users/scarver/LINQ/development/repositories/linq-platform-mcp/`.
+- Initial commit: `822eaae` — "Phase A scaffold per Decision 0015 implementation/11-repo-layout.md" (50 files).
+- `infra/master.yaml` carries `Default:` values for `PlatformAccountId` (`631916786699`), `ProductAccountId` (`529394632305`), and `LoggingAccountId` (`631916786699` — single-account logging per session-locked decision D5; full ADR-level decision deferred to Phase B).
+- `CODEOWNERS` uses `@shannoncarver` only — personal account cannot host `@linq/*` teams; revisit when collaborators join.
+- Stack files under `infra/stacks/` and workflow files under `.github/workflows/` are header-only stubs. Body authoring is **Phase B** (bootstrap CFN + GHA OIDC); M1.1–M1.4 deliverables are **Phase C**. Both are out of scope for this session.
+- Coordinator: `10-eng-principal` (dispatch); writer: `11-eng-cloudops` (file authoring); coordinator handled `git init` + `gh repo create --public --push` since the dispatched specialist did not have shell access.
+
 ## [2026-05-04] lint | Post-Phase-D-tail full wiki audit — 0 blocking findings; 1 advisory resolved
 
 All 8 SCHEMA §7 checks passed across 21 wiki pages (10 entities, 2 concepts, 14 sources, 1 synthesis) and 14 raw files.
