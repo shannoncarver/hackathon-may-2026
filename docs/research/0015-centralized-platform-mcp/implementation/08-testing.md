@@ -201,7 +201,7 @@ Breakdown: 1 d for unit-test scaffolding plus the JWT matrix; 1 d for the contra
 - [`../03-risks-register.md`](../03-risks-register.md) — risk-to-mitigation map; six risks listed in §7 trace back to mitigations defined here.
 - [`./03-mcp-server.md`](./03-mcp-server.md) — module layout; unit-test files mirror this layout one-to-one.
 - [`./04-registry.md`](./04-registry.md) — registration API; AC4 sub-cases test the four documented rejection classes.
-- [`./07-sample-handler.md`](./07-sample-handler.md) — handler-side JWT verify and contract test rig (referenced from the implementation plan; this artifact treats the contract layer as inheriting from the handler repo).
+- [`./07-poc-handler.md`](./07-poc-handler.md) — handler-side JWT verify and contract test rig (referenced from the implementation plan; this artifact treats the contract layer as inheriting from the handler repo).
 - [`./10-observability-runbooks.md`](./10-observability-runbooks.md) — three runbooks AC10 asserts the presence of; alarm names referenced from `audit-reconciliation.integration.spec.ts`.
 
 ## 7. Risks protected against

@@ -288,6 +288,7 @@ interface DispatchArgs {
 
 interface SignedInvocationEnvelope {
   identityToken: string;               // ≤5 min KMS-signed JWT (05-identity-broker)
+  callId: string;                      // platform request_id; matches identityToken.jti and the tags.request_id session tag — handler uses this for log correlation (R10)
   toolId: string;                      // e.g. "erp.checkUserAccess"
   toolVersion: string;                 // e.g. "1.4.0"
   input: Record<string, unknown>;      // schema-validated tool input

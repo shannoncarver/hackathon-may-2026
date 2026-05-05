@@ -146,7 +146,7 @@ import outputSchema from "../schemas/output.json";
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.TABLE_NAME!;
 const PLATFORM_JWKS_URL = process.env.PLATFORM_JWKS_URL!;       // https://mcp.linq.platform/.well-known/jwks.json
-const EXPECTED_AUDIENCE = process.env.EXPECTED_AUDIENCE!;       // arn:aws:lambda:...:erp-check-user-access
+const EXPECTED_AUDIENCE = process.env.EXPECTED_AUDIENCE!;       // https://erp-handler.linq.platform — RFC 8707 audience URI; pinned in 04-registry handlerAudience field and emitted by 05-identity-broker
 const EXPECTED_ISSUER = process.env.EXPECTED_ISSUER!;           // https://mcp.linq.platform/identity-broker
 
 interface Args { userId: string; tenantId?: string }   // tenantId in args is IGNORED — see R1 mitigation

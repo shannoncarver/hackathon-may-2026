@@ -130,7 +130,7 @@ resource "auth0_resource_server_scope" "erp_read_tenant" {
 #   lms:read:course    — Read LMS course records.
 ```
 
-V1 only ships the `erp:*` permissions because the V1 POC handler is `erp.checkUserAccess` ([CC-4](../../../../../../scarver/.claude/plans/implementation-plan-centralized-dapper-stearns.md), per the chosen sample product). Per-product onboarding adds a new permission set per product without touching existing ones — **additive**, not migrative.
+V1 only ships the `erp:*` permissions because the V1 POC handler is `erp.checkUserAccess` ([CC-4](./00-overview.md#cross-cutting-decisions-reconciled), per the chosen sample product). Per-product onboarding adds a new permission set per product without touching existing ones — **additive**, not migrative.
 
 **Authorization split** — the MCP server validates that the agent holds the API scope (`mcp:read`) **and** the human user holds the per-handler permission (`erp:read:user`). Both checks must pass. Tenant-scope enforcement at the handler layer rounds this out ([`04-registry.md`](./04-registry.md), [`07-poc-handler.md`](./07-poc-handler.md)) — the MCP server reads tenant from the user's verified token and injects it as a signed argument ([R1](../03-risks-register.md#r1--tenant-leakage-at-the-handler)).
 
