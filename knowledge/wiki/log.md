@@ -2,6 +2,86 @@
 
 Append-only chronological record of operations against the knowledge base. One entry per ingest, lint, or major synthesis. Format: `## [YYYY-MM-DD] <op> | <Title>`. Conventions: [`knowledge/SCHEMA.md`](../SCHEMA.md).
 
+## [2026-05-04] milestone | Decision 0015 M1 Phase A — `linq-platform-mcp` repo scaffolded and pushed
+
+Per cross-cutting decision **CC-2** in [`docs/research/0015-centralized-platform-mcp/implementation/00-overview.md`](../../docs/research/0015-centralized-platform-mcp/implementation/00-overview.md), the M1 Platform Services build lives in a separate repo, not in this hackathon repo. Phase A (repo scaffold per [`implementation/11-repo-layout.md`](../../docs/research/0015-centralized-platform-mcp/implementation/11-repo-layout.md) §2.1) is complete.
+
+- New repo: <https://github.com/shannoncarver/linq-platform-mcp> (public, default branch `main`).
+- Local path: `/Users/scarver/LINQ/development/repositories/linq-platform-mcp/`.
+- Initial commit: `822eaae` — "Phase A scaffold per Decision 0015 implementation/11-repo-layout.md" (50 files).
+- `infra/master.yaml` carries `Default:` values for `PlatformAccountId` (`631916786699`), `ProductAccountId` (`529394632305`), and `LoggingAccountId` (`631916786699` — single-account logging per session-locked decision D5; full ADR-level decision deferred to Phase B).
+- `CODEOWNERS` uses `@shannoncarver` only — personal account cannot host `@linq/*` teams; revisit when collaborators join.
+- Stack files under `infra/stacks/` and workflow files under `.github/workflows/` are header-only stubs. Body authoring is **Phase B** (bootstrap CFN + GHA OIDC); M1.1–M1.4 deliverables are **Phase C**. Both are out of scope for this session.
+- Coordinator: `10-eng-principal` (dispatch); writer: `11-eng-cloudops` (file authoring); coordinator handled `git init` + `gh repo create --public --push` since the dispatched specialist did not have shell access.
+
+## [2026-05-04] lint | Post-Phase-D-tail full wiki audit — 0 blocking findings; 1 advisory resolved
+
+All 8 SCHEMA §7 checks passed across 21 wiki pages (10 entities, 2 concepts, 14 sources, 1 synthesis) and 14 raw files.
+
+(1) Orphans — none; all 21 pages present in `index.md`.
+(2) Orphan raw files — none; all 14 raw files referenced by `raw_path:` on a matching wiki source page.
+(3) Broken links — none; all frontmatter paths and synthesis body links resolve.
+(4) Stale claims — none; all pages updated 2026-05-03 or 2026-05-04.
+(5) Contradictions — 1 advisory raised: six Phase A entity bodies referenced "Decision 0014" in section headers after the ADR slot was renumbered to 0015. **Resolved during lint follow-up:** entity bodies for `mcp-authorization`, `mcp-tool-catalog`, `auth0-m2m`, `oauth-token-exchange`, `sts-assume-role-external-id`, and `lambda-resource-policy` updated to "Decision 0015". `SCHEMA.md` §4's "Decision 0014 lands" references for the still-pending product-slug ADR were preserved.
+(6) Bidirectional drift — none; all 17 source↔entity/concept pairs confirmed bidirectional. SCHEMA §7 bidirectional rule applies only to source `entities:` ↔ entity `sources:`; synthesis backlinks on entity/source pages are not required and not raised as false positives.
+(7) Unknown product tags — none; only `product:cross-cutting` used.
+(8) Frontmatter completeness — none; all 21 pages have required fields.
+
+Curator: knowledge-curator (lint pass); coordinator (advisory resolution).
+
+## [2026-05-04] synthesis | Centralized MCP broker pattern for LINQ
+
+- Page: [wiki/synthesis/centralized-mcp-broker.md](synthesis/centralized-mcp-broker.md)
+- Composes six entities (mcp-authorization, mcp-tool-catalog, auth0-m2m, oauth-token-exchange, sts-assume-role-external-id, lambda-resource-policy) plus the Atlassian MCP and sub-agent entities into the LINQ-specific "Auth0-fronted MCP broker with cross-account credential exchange" pattern adopted in [Decision 0015](../../docs/decisions/0015-centralized-platform-mcp.md).
+- Distinguishes the centralized broker pattern (internal LINQ products) from the per-user OAuth pattern of [Decision 0008](../../docs/decisions/0008-mcp-connectors.md) (external SaaS via Atlassian MCP). Coexist; neither supersedes.
+- Backed by the architecture review at [`docs/research/0015-centralized-platform-mcp/`](../../docs/research/0015-centralized-platform-mcp/00-overview.md): five role-pass memos plus six synthesis artifacts.
+- Curator: coordinator (synthesis is coordinator-owned per [`.claude/rules/coordination.md`](../../.claude/rules/coordination.md)).
+
+## [2026-05-04] ingest | Phase A batch — Decision 0015 Platform MCP Server knowledge base
+
+Six sources ingested to close confirmed KB gaps for Decision 0015 (Centralized Platform MCP Server — multi-account AWS, Auth0 identity, read-only v1, 4 products / 40–200 handlers).
+
+> **Slot correction:** the curator dispatched Phase A under "Decision 0014"; mid-review the coordinator discovered slot 0014 is reserved by [Decision 0013](../../docs/decisions/0013-karpathy-wiki-pattern.md) for the canonical LINQ product-slug list. The work was renumbered to 0015. All six ingested wiki entries are correct as-is — they reference the standards (MCP, OAuth, RFC 8693, AWS STS, Lambda) generically, not the LINQ ADR number.
+
+**Sources:**
+
+1. Source: [wiki/sources/mcp-tool-resource-prompt-primitives.md](sources/mcp-tool-resource-prompt-primitives.md)
+   - Raw: [raw/sources/mcp-tool-resource-prompt-primitives-2026-05-04.md](../raw/sources/mcp-tool-resource-prompt-primitives-2026-05-04.md) (condensed-copy form — `auth_required: false`)
+   - URLs consulted: `https://modelcontextprotocol.io/docs/concepts/tools`, `https://modelcontextprotocol.io/docs/concepts/resources`, `https://modelcontextprotocol.io/docs/concepts/prompts`, `https://modelcontextprotocol.io/specification/2025-06-18`
+   - New entities: [mcp-tool-catalog](entities/mcp-tool-catalog.md)
+
+2. Source: [wiki/sources/mcp-authorization-spec.md](sources/mcp-authorization-spec.md)
+   - Raw: [raw/sources/mcp-authorization-spec-2026-05-04.md](../raw/sources/mcp-authorization-spec-2026-05-04.md) (condensed-copy form — `auth_required: false`)
+   - URL: `https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization`
+   - New entities: [mcp-authorization](entities/mcp-authorization.md)
+
+3. Source: [wiki/sources/auth0-client-credentials-flow.md](sources/auth0-client-credentials-flow.md)
+   - Raw: [raw/sources/auth0-client-credentials-flow-2026-05-04.md](../raw/sources/auth0-client-credentials-flow-2026-05-04.md) (condensed-copy form — `auth_required: false`)
+   - URL: `https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow`
+   - Fetch note: primary URL with trailing `s` on `flows` returned HTTP 404; canonical URL without `s` used.
+   - New entities: [auth0-m2m](entities/auth0-m2m.md)
+
+4. Source: [wiki/sources/oauth-token-exchange-rfc8693.md](sources/oauth-token-exchange-rfc8693.md)
+   - Raw: [raw/sources/oauth-token-exchange-rfc8693-2026-05-04.md](../raw/sources/oauth-token-exchange-rfc8693-2026-05-04.md) (condensed-copy form — `auth_required: false`)
+   - URL: `https://datatracker.ietf.org/doc/html/rfc8693`
+   - New entities: [oauth-token-exchange](entities/oauth-token-exchange.md)
+
+5. Source: [wiki/sources/aws-sts-assume-role-external-id.md](sources/aws-sts-assume-role-external-id.md)
+   - Raw: [raw/sources/aws-sts-assume-role-external-id-2026-05-04.md](../raw/sources/aws-sts-assume-role-external-id-2026-05-04.md) (condensed-copy form — `auth_required: false`)
+   - URL: `https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html`
+   - New entities: [sts-assume-role-external-id](entities/sts-assume-role-external-id.md)
+
+6. Source: [wiki/sources/aws-lambda-resource-based-policies.md](sources/aws-lambda-resource-based-policies.md)
+   - Raw: [raw/sources/aws-lambda-resource-based-policies-2026-05-04.md](../raw/sources/aws-lambda-resource-based-policies-2026-05-04.md) (condensed-copy form — `auth_required: false`)
+   - URLs consulted: `https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html`, `https://docs.aws.amazon.com/lambda/latest/dg/permissions-function-cross-account.html`
+   - New entities: [lambda-resource-policy](entities/lambda-resource-policy.md)
+
+**New concepts:** (none — all ingests produced entities)
+
+**Fetch failures:** Auth0 primary URL (`authentication-and-authorization-flows/client-credentials-flow`, with trailing `s`) returned HTTP 404 on multiple attempts. Recovered via canonical URL variant and the `call-your-api` sub-page. Content is complete. The broken URL is noted in the raw file and source wiki page.
+
+**Curator:** knowledge-curator
+
 ## [2026-05-03] lint | 0 findings
 
 All 8 checks passed post-ingest of `atlassian-remote-mcp-understand`. Checks run: (1) orphans — none (14 wiki pages, all in index.md: 4 entities, 2 concepts, 8 sources, 0 synthesis); (2) orphan raw files — none (8 raw files, all referenced by a `raw_path:` field on the matching wiki source page); (3) broken links — none (new source page links, `atlassian-mcp.md` `## IP allowlisting integration` section link to `../sources/atlassian-remote-mcp-understand.md` resolves, `atlassian-remote-mcp-available-domains.md` OQ#2 relative link to `atlassian-remote-mcp-understand.md` resolves, all raw-file links in entity body resolve); (4) stale claims — none (all pages `updated: 2026-05-03`; 90-day threshold is 2026-02-02); (5) contradictions — none (team-size and judging-criterion discrepancies remain acknowledged open questions, not unresolved contradictions); (6) bidirectional drift — none (`atlassian-remote-mcp-understand.md` `entities: ["wiki/entities/atlassian-mcp.md"]` confirmed; `atlassian-mcp.md` `sources:` array entry `"wiki/sources/atlassian-remote-mcp-understand.md"` confirmed; all 14 source↔entity/concept pairs verified); (7) unknown product tags — none (only `product:cross-cutting` used as product tag across all pages; no other `product:*` tags present); (8) frontmatter completeness — none (new source page has all required source-kind fields per SCHEMA §2; no `related:` field on source-kind frontmatter). 14 wiki pages reviewed; 8 raw files reviewed. Curator: knowledge-curator.
