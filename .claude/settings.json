@@ -10,7 +10,8 @@
       "Bash(git log:*)",
       "Bash(ls:*)",
       "Bash(python evals/run.py:*)",
-      "Bash(pytest:*)"
+      "Bash(pytest:*)",
+      "Bash(python .claude/skills/auth0-logs/scripts/auth0_logs.py:*)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
