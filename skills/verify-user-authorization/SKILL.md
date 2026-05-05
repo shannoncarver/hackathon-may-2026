@@ -1,8 +1,8 @@
 ---
 name: verify-user-authorization
-description: Verify whether a user is authorized for a LINQ ERP tenant. Use when the user asks "is this user authorized for tenant X", "verify user authorization", "check ERP access for user", "ERP authz check", "harmony auth lookup", "why can't <email> log in to ERP", "can <email> sign in for tenant <id>", or wants the raw erp_users / erp_tenants records as evidence. Reads DynamoDB directly via boto3 and mirrors the HarmonyAuthAuthorize C# endpoint's decision logic. Returns a JSON envelope with authorized=true|false, a status enum (AUTHORIZED_SUPERUSER, AUTHORIZED_USER, USER_NOT_FOUND, USER_DISABLED, SUPERUSER_DISABLED, TENANT_DISABLED, TENANT_MISSING_BUT_USER_AUTHORIZED, TENANT_MISSING_USER_NOT_AUTHORIZED, ERROR), the matched user-record kind, and the raw user and tenant attributes. Dev environment only.
+description: Verify whether a user is authorized for a LINQ ERP tenant. Use when the user asks "is this user authorized for tenant X", "verify user authorization", "check ERP access for user", "ERP authz check", "harmony auth lookup", "why can't this user log in to ERP", "can this user sign in for a given tenant", or wants the raw erp_users / erp_tenants records as evidence. Reads DynamoDB directly via boto3 and mirrors the HarmonyAuthAuthorize C# endpoint's decision logic. Returns a JSON envelope with authorized=true or false, a status enum (AUTHORIZED_SUPERUSER, AUTHORIZED_USER, USER_NOT_FOUND, USER_DISABLED, SUPERUSER_DISABLED, TENANT_DISABLED, TENANT_MISSING_BUT_USER_AUTHORIZED, TENANT_MISSING_USER_NOT_AUTHORIZED, ERROR), the matched user-record kind, and the raw user and tenant attributes. Dev environment only.
 allowed-tools: Bash
-argument-hint: <tenant_id> <user_email>
+argument-hint: tenant_id and user_email
 ---
 
 # verify-user-authorization
