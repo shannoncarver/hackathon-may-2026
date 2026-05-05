@@ -11,8 +11,7 @@
       "Bash(ls:*)",
       "Bash(python evals/run.py:*)",
       "Bash(pytest:*)",
-      "Bash(python .claude/skills/auth0-logs/scripts/auth0_logs.py:*)",
-      "Bash(set -a && source .env && set +a && python .claude/skills/auth0-logs/scripts/auth0_logs.py:*)"
+      "Bash(python .claude/skills/auth0-logs/scripts/auth0_logs.py:*)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

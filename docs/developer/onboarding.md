@@ -38,6 +38,17 @@ To use the `/auth0-logs` skill, you need M2M credentials for the sandbox tenant.
 
 The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL). Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
 
+### If your `.env` is exposed
+
+If you suspect the `.env` file or `.auth0-token.json` was leaked (accidental commit, screenshare, lost laptop, etc.):
+
+1. In the Auth0 Dashboard, navigate to **Applications → [your M2M app] → Settings**, click **Rotate Secret**, and confirm.
+2. Delete the local cache: `rm .auth0-token.json`.
+3. Update `.env` with the new Client Secret.
+4. Re-test with `/auth0-logs show me the latest 5 events`.
+
+Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this manual rotation is operational debt — the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) M4 will replace this with broker-managed tokens.
+
 ## Adding a new sub-agent
 
 The pattern is canonicalized in [`docs/agent/17-eng-ai.md`](../agent/17-eng-ai.md). Steps:

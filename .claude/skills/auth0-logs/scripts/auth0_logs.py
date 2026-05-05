@@ -45,6 +45,37 @@ def _error_exit(error_type: str, exit_code: int, detail: str, hint: str) -> None
     sys.exit(exit_code)
 
 
+def _load_dotenv() -> None:
+    """Load KEY=VALUE pairs from .env into os.environ if not already set.
+
+    Searches: ./.env, then <repo_root>/.env (repo root inferred from this file's
+    location). Silently no-ops if no .env is found. Existing env vars are not
+    overridden — sourced-env in the parent shell still wins.
+    """
+    candidates = [
+        Path(".env"),
+        Path(__file__).resolve().parent.parent.parent.parent / ".env",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+        except OSError:
+            pass
+        return
+
+
 # ---------------------------------------------------------------------------
 # Layer 1 — Auth Provider (swappable)
 # ---------------------------------------------------------------------------
@@ -61,10 +92,14 @@ class AuthProvider(Protocol):
 class EnvAuthProvider:
     """Standalone mode: reads credentials from environment variables, caches token to file."""
 
+    # Security: never include self._client_id, self._client_secret, or token contents
+    # in error messages or logs. _error_exit calls below MUST NOT echo credentials.
+
     TOKEN_CACHE_PATH = Path(".auth0-token.json")
     TOKEN_SAFETY_MARGIN = 300  # refresh 5 min before expiry
 
     def __init__(self) -> None:
+        _load_dotenv()
         self._domain = os.environ.get("AUTH0_DOMAIN", "")
         self._client_id = os.environ.get("AUTH0_CLIENT_ID", "")
         self._client_secret = os.environ.get("AUTH0_CLIENT_SECRET", "")
@@ -114,9 +149,10 @@ class EnvAuthProvider:
                 "client_secret": self._client_secret,
                 "audience": f"https://{self._domain}/api/v2/",
             },
+            timeout=(5, 30),
         )
         if resp.status_code in (401, 403):
-            detail = resp.json().get("error_description", resp.text)
+            detail = resp.json().get("error_description", resp.text[:500])
             _error_exit(
                 "auth_failed",
                 2,
@@ -131,7 +167,21 @@ class EnvAuthProvider:
             "access_token": token_data["access_token"],
             "expires_at": time.time() + token_data.get("expires_in", 86400),
         }
-        self.TOKEN_CACHE_PATH.write_text(json.dumps(cache))
+        tmp = self.TOKEN_CACHE_PATH.with_suffix(".tmp")
+        # Use os.open with explicit mode for owner-only permissions on POSIX.
+        fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(cache, f)
+            os.replace(str(tmp), str(self.TOKEN_CACHE_PATH))
+        except Exception:
+            # Clean up temp file on failure
+            if tmp.exists():
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
+            raise
 
 
 # When Decision 0015 M4 lands and the centralized-platform IdentityBroker is
@@ -281,7 +331,7 @@ class Auth0LogsClient:
 
     def _request(self, params: dict) -> requests.Response:
         """Make a GET request with rate-limit handling and structured errors."""
-        resp = self.session.get(self.base_url, params=params)
+        resp = self.session.get(self.base_url, params=params, timeout=(5, 30))
 
         # Proactive rate-limit back-off: pause before we hit the wall
         remaining = resp.headers.get("X-RateLimit-Remaining")
@@ -294,7 +344,7 @@ class Auth0LogsClient:
         if resp.status_code == 429:
             retry_after = float(resp.headers.get("Retry-After", 1))
             time.sleep(retry_after)
-            resp = self.session.get(self.base_url, params=params)
+            resp = self.session.get(self.base_url, params=params, timeout=(5, 30))
             if resp.status_code == 429:
                 _error_exit(
                     "rate_limited",
@@ -321,7 +371,7 @@ class Auth0LogsClient:
             )
 
         if resp.status_code in (401, 403):
-            detail = resp.json().get("message", resp.text)
+            detail = resp.json().get("message", resp.text[:500])
             _error_exit(
                 "auth_failed",
                 2,
