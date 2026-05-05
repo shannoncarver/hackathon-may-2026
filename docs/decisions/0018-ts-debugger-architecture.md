@@ -1,12 +1,12 @@
 ---
 status: Accepted
-date: 2026-05-04
+date: 2026-05-05
 category: architecture
 ---
 
 # Decision 0018 — Tech Services debugger architecture
 
-**Status:** Accepted (2026-05-04)
+**Status:** Accepted (2026-05-05)
 
 ## Context
 
@@ -16,16 +16,16 @@ The "Forge: Season 2 — Every Minute Matters" hackathon (May 2026) requires AI-
 
 This decision pins the architecture for the first product surface — the Harmony-Auth debugger — and sets the pattern future product debuggers extend.
 
-**Language:** Python, to match the existing `feature/auth0-logs-skill` tooling and the three-layer auth pattern already established in that branch's `auth0_logs.py`.
+**Language:** TypeScript. The Harmony-Auth repo (`/Harmony-Auth`) is a TypeScript application that exports canonical type definitions for every DynamoDB entity the debugger queries: `MultiFactorEnrollment`, `SuperAdminMFA`, `TokenCache`, `Auth0UserEvent`, the `Lock` shape, `Auth0Connection`, and `ProductKey`. All five repository classes contain the exact query patterns (GSI names, key conditions, projection expressions) the debugger needs. Implementing in TypeScript lets `ha-debug-core` import those types directly rather than maintaining a parallel set of Python dataclasses that will drift from the source of truth. See Alternatives for the Python trade-off.
 
 ## Decision
 
 Two components plus a Claude Code skill, one repository.
 
 ```
-Python ha-debug package (library layer)
+TypeScript ha-debug package (library layer)
               ↓
-        [ha-debug CLI (argparse)]
+        [ha-debug CLI (commander)]
               ↑
         Claude Code via Bash,
         guided by the ts-debug skill
@@ -33,19 +33,18 @@ Python ha-debug package (library layer)
 
 ### Components
 
-- **`ha-debug-core`** (Python package) — All join logic, queries, and result shaping. Pure functions in, structured records out. Knows nothing about CLIs, transports, or the calling environment.
-- **`ha-debug`** (CLI) — Argv-to-function shim over the core. Invoked by humans, shell scripts, CI jobs, and Claude Code via the Bash tool. Built with `argparse`; JSON to stdout, errors to stderr — matching the `auth0_logs.py` output contract.
+- **`ha-debug-core`** (TypeScript package) — All join logic, queries, and result shaping. Pure functions in, structured records out. Knows nothing about CLIs, transports, or the calling environment.
+- **`ha-debug`** (CLI) — Argv-to-function shim over the core. Invoked by humans, shell scripts, CI jobs, and Claude Code via the Bash tool. Built with `commander`; JSON to stdout, errors to stderr — machine-readable output contract.
 - **`ts-debug`** (Claude Code skill) — Markdown skill at `.claude/skills/ts-debug/SKILL.md`. Tells Claude when to invoke `ha-debug` for which ticket symptoms and how to interpret the output. The skill is what makes the CLI demo-able in Claude Code without the engineer having to remember subcommand syntax.
 
 ### Three-layer architecture
 
-The library follows the same three-layer pattern established by `auth0_logs.py` in `feature/auth0-logs-skill`:
-
 **Layer 1 — AuthProvider (swappable)**
 
-```python
-class AuthProvider(Protocol):
-    def get_credentials(self, service: str) -> Credentials: ...
+```typescript
+interface AuthProvider {
+  getCredentials(service: string): Promise<Credentials>;
+}
 ```
 
 - `EnvAuthProvider` — reads shared read-only credentials from a local config file (`.ha-debug.env` or `ha-debug.json`) and caches tokens with a configurable TTL. Ships with the hackathon build.
@@ -60,11 +59,11 @@ One client class per data source. Each client:
 
 Initial clients: `Auth0LogsClient`, `CognitoClient`, `DynamoDBClient` (shared across tables), `CloudWatchClient`.
 
-> **Reuse note:** `Auth0LogsClient` and its checkpoint-pagination logic are already implemented in `feature/auth0-logs-skill`'s `auth0_logs.py`. The `ha-debug-core` package imports or copies that client rather than re-implementing it. This powers `_get_recent_login_attempts` with no duplication.
+> **Type reuse:** DynamoDB schema types for all five tables are imported directly from the Harmony-Auth source: `MultiFactorEnrollment` (`src/orm/MultiFactorEnrollment.ts`), `SuperAdminMFA` (`src/def/superAdminMFA.ts`), `TokenCache` (`src/def/auth0-token.ts`), `Auth0UserEvent` (`src/def/auth0/Auth0UserEvent.ts`). The `Lock` shape and GSI/key-condition constants are copied verbatim from `src/repository/LockRepository.ts`. These types are the Harmony-Auth source of truth; TypeScript gives the compiler enforcement that our queries match the actual DynamoDB schema.
 
 **Layer 3 — CLI + output**
 
-`argparse`-based CLI. Subcommands map one-to-one to the public assemblers. Output:
+`commander`-based CLI. Subcommands map one-to-one to the public assemblers. Output:
 - Success → JSON to stdout (Claude reads it).
 - Error → structured JSON to stderr with `{"error": "<kind>", "message": "...", "retryable": true|false}`.
 
@@ -72,24 +71,24 @@ Initial clients: `Auth0LogsClient`, `CognitoClient`, `DynamoDBClient` (shared ac
 
 Two seams ship with the core on day one, before any assembler is written. Per the eng-principal review:
 
-- **`resolve_subject(email_or_user_id: str) -> CanonicalSubject`** — the single place that knows Auth0 versus Cognito ID precedence, alias handling, and soft-deleted user behavior. Every assembler's first call. Without this seam, identity-resolution rules duplicate across primitives.
-- **`DataSourceError(Exception)`** with fields `source: str`, `kind: Literal["missing", "throttled", "timeout", "auth", "unknown"]`, `retryable: bool`, `raw: Any` — normalized error type across all data sources. Without normalization, six different error shapes (Auth0 4xx, Cognito throttling, DynamoDB `ProvisionedThroughputExceeded`, CloudWatch query timeouts, etc.) leak into case files as a graveyard of half-failed lookups.
+- **`resolveSubject(emailOrUserId: string): Promise<CanonicalSubject>`** — the single place that knows Auth0 versus Cognito ID precedence, alias handling, and soft-deleted user behavior. Every assembler's first call. Without this seam, identity-resolution rules duplicate across primitives.
+- **`DataSourceError extends Error`** with fields `source: string`, `kind: "missing" | "throttled" | "timeout" | "auth" | "unknown"`, `retryable: boolean`, `raw: unknown` — normalized error type across all data sources. Without normalization, six different error shapes (Auth0 4xx, Cognito throttling, DynamoDB `ProvisionedThroughputExceeded`, CloudWatch query timeouts, etc.) leak into case files as a graveyard of half-failed lookups.
 
 ### Public surface — assemblers only
 
-The CLI subcommand list exposes only the *case-file assemblers*. Primitives stay internal (prefixed `_` by Python convention and documented as `@internal`). Per the eng-principal review: exposing primitives invites the model to compose them ad hoc and produce inconsistent case files. Tools should match user intents (resolve a ticket), not data sources (query a table).
+The CLI subcommand list exposes only the *case-file assemblers*. Primitives stay internal (prefixed with `_` by convention and not exported from the package index). Per the eng-principal review: exposing primitives invites the model to compose them ad hoc and produce inconsistent case files. Tools should match user intents (resolve a ticket), not data sources (query a table).
 
 **Public assemblers (v1):**
 
 | Function | CLI subcommand | Inputs | Output |
 |---|---|---|---|
-| `assemble_login_failure_case(email_or_user_id, window)` | `assemble-login-failure-case` | identity input + time window | structured timeline of identity, recent login attempts, token issuance state, and account lock state |
-| `assemble_mfa_not_enforced_case(email_or_user_id)` | `assemble-mfa-not-enforced-case` | identity input | configuration snapshot of identity, MFA state, and MFA enforcement context |
-| `write_resolved_case(case_file, hypothesis, resolution)` | `write-resolved-case` | assembled case + Claude's hypothesis + the chosen fix | sanitized markdown written to `knowledge/wiki/cases/` per [Decision 0017](0017-case-as-wiki-bucket.md) |
+| `assembleLoginFailureCase(emailOrUserId, window)` | `assemble-login-failure-case` | identity input + time window | structured timeline of identity, recent login attempts, token issuance state, and account lock state |
+| `assembleMfaNotEnforcedCase(emailOrUserId)` | `assemble-mfa-not-enforced-case` | identity input | configuration snapshot of identity, MFA state, and MFA enforcement context |
+| `writeResolvedCase(caseFile, hypothesis, resolution)` | `write-resolved-case` | assembled case + Claude's hypothesis + the chosen fix | sanitized markdown written to `knowledge/wiki/cases/` per [Decision 0017](0017-case-as-wiki-bucket.md) |
 
-**Internal primitives (not exposed as CLI subcommands):**
+**Internal primitives (not exported from package index):**
 
-`_get_user_identity`, `_get_recent_login_attempts`, `_get_token_issuance_state`, `_get_mfa_state`, `_get_account_lock_state`, `_get_mfa_enforcement_context`. Documented `@internal` in the library; not importable from the public package namespace.
+`_getUserIdentity`, `_getRecentLoginAttempts`, `_getTokenIssuanceState`, `_getMfaState`, `_getAccountLockState`, `_getMfaEnforcementContext`. Not importable from `ha-debug-core`'s public namespace.
 
 ### Why CLI + skill, not MCP
 
@@ -121,19 +120,21 @@ v1 reads from DynamoDB tables (`UserEvents`, `TokenCache`, `MFAEnrollment`, `Loc
 
 ### Cross-product extension
 
-Other LINQ products live on different AWS accounts and have different data-source patterns. The architecture is intentionally per-product: each product gets its own `<product>-debug-core` Python package, `<product>-debug` CLI, and `<product>` Claude Code skill. Naming convention and shared protocol details are deferred to a follow-up ADR when the second product comes online.
+Other LINQ products live on different AWS accounts and have different data-source patterns. The architecture is intentionally per-product: each product gets its own `<product>-debug-core` TypeScript package, `<product>-debug` CLI, and `<product>` Claude Code skill. Naming convention and shared protocol details are deferred to a follow-up ADR when the second product comes online.
 
 ## Consequences
 
-- Pro: Demo-able in Claude Code with a one-line CLI install. No MCP host to register, no JSON-RPC layer, no extra Claude Desktop configuration.
-- Pro: Python matches the existing `feature/auth0-logs-skill` tooling. `Auth0LogsClient` reuse eliminates duplicated Auth0 pagination logic.
+- Pro: Demo-able in Claude Code with a one-line CLI install (`npm install -g .` or `npx`). No MCP host to register, no JSON-RPC layer, no extra Claude Desktop configuration.
+- Pro: TypeScript allows direct import of Harmony-Auth's canonical DynamoDB schema types. The compiler enforces that query results match the actual table schema; no parallel Python dataclasses to drift.
+- Pro: All five Harmony-Auth repository classes contain the exact GSI names, key conditions, and marshalling options needed — copy-with-confidence rather than reverse-engineering from the DynamoDB console.
 - Pro: The three-layer auth pattern (`EnvAuthProvider` → `BrokerAuthProvider`) makes the hackathon auth model a clean swap-out, not a rewrite, when production auth lands.
 - Pro: The case-file assembler contract is stable; primitives can evolve internally without changing the public surface.
-- Pro: Resolved cases compound. `write_resolved_case` writes to `knowledge/wiki/cases/` per [Decision 0017](0017-case-as-wiki-bucket.md), so future debug sessions retrieve prior resolutions as context.
+- Pro: Resolved cases compound. `writeResolvedCase` writes to `knowledge/wiki/cases/` per [Decision 0017](0017-case-as-wiki-bucket.md), so future debug sessions retrieve prior resolutions as context.
 - Pro: Reversible. Adding an MCP transport later is a thin shim over the same core library if Claude Desktop or another MCP-only client becomes in-scope.
-- Con: Claude Desktop is unsupported. Adopting Desktop later requires building the MCP shim that was deferred here.
+- Con: Node.js runtime required on the presenter's laptop. The team already works in the Harmony-Auth TypeScript repo, so this is a negligible added dependency.
 - Con: Auth model is hackathon-only. Production deployment is a separate effort, not a config flip.
 - Con: Cross-product extension story is sketched, not pinned. Mitigation: deferred to a follow-up ADR when needed.
+- Con: Claude Desktop is unsupported. Adopting Desktop later requires building the MCP shim that was deferred here.
 
 ## Alternatives considered
 
@@ -143,7 +144,7 @@ Other LINQ products live on different AWS accounts and have different data-sourc
 - **Hosted / remote MCP server.** Rejected for hackathon scope. A remote server is the right answer if Claude.ai web later becomes in-scope.
 - **Expose primitives plus assemblers as CLI subcommands.** Rejected per eng-principal review: nine commands is a wide surface, and primitives are not independently useful to a Tech Services engineer answering a ticket.
 - **Per-user authentication via Microsoft Entra in v1.** Rejected for hackathon scope. The demo runs as one user on one laptop; per-user auth is a production concern, captured in a follow-up ADR.
-- **TypeScript instead of Python.** Rejected: the existing `feature/auth0-logs-skill` branch establishes a Python tooling baseline with a working three-layer auth pattern. Matching that language avoids a second runtime, reuses the Auth0 client, and keeps the project internally consistent.
+- **Python instead of TypeScript.** Rejected. Initial rationale for Python was reuse of the `feature/auth0-logs-skill` three-layer auth pattern in `auth0_logs.py`. Rejected after inspecting Harmony-Auth: the five DynamoDB repository classes (`MultiFactorEnrollmentRepository`, `LockRepository`, `TokenCacheRepository`, `SuperAdminMFARepository`, `UserEventsRepository`) contain exact TypeScript type definitions for every entity the debugger queries. Importing those types eliminates a category of schema-drift bugs. The `auth0_logs.py` three-layer auth pattern translates cleanly to TypeScript; no capability is lost, and the Auth0 management API is accessible via the official `auth0` npm package with first-class TypeScript types.
 
 ## Sources
 
@@ -156,10 +157,11 @@ Other LINQ products live on different AWS accounts and have different data-sourc
 - knowledge-curator review (2026-05-04) and eng-principal review (2026-05-04) — both consulted before this decision was committed.
 - Anthropic guidance on tool design: https://www.anthropic.com/engineering/writing-tools-for-agents
 - claude-code-guide specialist verification (2026-05-04): Claude Desktop has no shell-execution tool; MCP is required to invoke local capabilities. Drove the audience-scope decision.
-- `feature/auth0-logs-skill` branch — `.claude/skills/auth0-logs/scripts/auth0_logs.py` (three-layer pattern reference implementation).
+- Harmony-Auth TypeScript source (`/Users/dainkasprak/Projects/temp-hack/Harmony-Auth`) — five DynamoDB repository classes and canonical schema types confirmed present (2026-05-05). Drove language decision from Python to TypeScript.
 
 ## History
 
 - 2026-05-04 (initial) — Three components: core library, CLI, stdio MCP server. Audience: Claude Code + Claude Desktop. Both transports first-class. Language: TypeScript. ADR numbered 0016.
 - 2026-05-04 (revised) — MCP server dropped. Audience narrowed to Claude Code. CLI + Claude Code skill is the chosen path. Reversible: MCP shim is the natural extension if Claude Desktop ever becomes in-scope.
 - 2026-05-04 (revised) — Language changed to Python to match `feature/auth0-logs-skill` tooling. Three-layer auth pattern (`EnvAuthProvider` / `BrokerAuthProvider`) adopted. `Auth0LogsClient` reuse noted. ADR renumbered from 0016 to 0018 to avoid collision with `feature/auth0-logs-skill` branch (which claims 0014 for auth0-logs-skill and 0015 for centralized-platform-mcp).
+- 2026-05-05 (revised) — Language reverted to TypeScript after inspecting the Harmony-Auth repo. All five DynamoDB repositories and their schema types (`MultiFactorEnrollment`, `SuperAdminMFA`, `TokenCache`, `Auth0UserEvent`, `Lock`) confirmed present as TypeScript exports. Direct type import eliminates schema-drift risk. Python alternative considered and rejected in Alternatives.

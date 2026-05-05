@@ -15,9 +15,9 @@ The tool lets a Tech Services engineer go from a symptom (an email, a clientId, 
 Two components plus a Claude Code skill, one repository:
 
 ```
-Python ha-debug package (library layer)
+TypeScript ha-debug package (library layer)
               ↓
-        [ha-debug CLI (argparse)]
+        [ha-debug CLI (commander)]
               ↑
         Claude Code via Bash,
         guided by the ts-debug skill
@@ -25,19 +25,17 @@ Python ha-debug package (library layer)
 
 | Component | Purpose |
 |---|---|
-| `ha-debug-core` | Python package. All join logic, queries, and result shaping. Pure functions in, structured records out. |
-| `ha-debug` (CLI) | Argv-to-function shim over the core, built with `argparse`. Used by humans, scripts, and Claude Code via Bash. JSON to stdout, errors to stderr. |
+| `ha-debug-core` | TypeScript package. All join logic, queries, and result shaping. Pure functions in, structured records out. Imports canonical DynamoDB schema types directly from Harmony-Auth. |
+| `ha-debug` (CLI) | Argv-to-function shim over the core, built with `commander`. Used by humans, scripts, and Claude Code via Bash. JSON to stdout, errors to stderr. |
 | `ts-debug` skill | Markdown skill at `.claude/skills/ts-debug/SKILL.md`. Tells Claude when to invoke `ha-debug` for which symptoms and how to interpret output. |
 
 The skill is what makes the CLI demo-able in Claude Code without the engineer having to remember subcommand syntax. See [Decision 0018 — Why CLI + skill, not MCP](../decisions/0018-ts-debugger-architecture.md) for the rationale and the trade-offs.
 
 ## Three-layer architecture
 
-The library follows the three-layer pattern established by `auth0_logs.py` in `feature/auth0-logs-skill`:
-
 1. **AuthProvider** (swappable) — `EnvAuthProvider` reads shared credentials from a local config file for the hackathon. `BrokerAuthProvider` is the production swap-in when the centralized platform MCP broker lands.
 2. **API clients** — one per data source (`Auth0LogsClient`, `CognitoClient`, `DynamoDBClient`, `CloudWatchClient`). Each handles HTTP, pagination, rate limiting, and raises `DataSourceError` on failure.
-3. **CLI + output** — `argparse` subcommands, JSON stdout, structured error stderr.
+3. **CLI + output** — `commander` subcommands, JSON stdout, structured error stderr.
 
 ## What it does — v1
 
@@ -57,9 +55,9 @@ The CLI exposes only three subcommands. Primitives stay internal — see [Decisi
 
 | Function | CLI subcommand | Use |
 |---|---|---|
-| `assemble_login_failure_case(email_or_user_id, window)` | `assemble-login-failure-case` | Run on archetype 1. |
-| `assemble_mfa_not_enforced_case(email_or_user_id)` | `assemble-mfa-not-enforced-case` | Run on archetype 2. |
-| `write_resolved_case(case_file, hypothesis, resolution)` | `write-resolved-case` | Persist a sanitized resolved case to the wiki. |
+| `assembleLoginFailureCase(emailOrUserId, window)` | `assemble-login-failure-case` | Run on archetype 1. |
+| `assembleMfaNotEnforcedCase(emailOrUserId)` | `assemble-mfa-not-enforced-case` | Run on archetype 2. |
+| `writeResolvedCase(caseFile, hypothesis, resolution)` | `write-resolved-case` | Persist a sanitized resolved case to the wiki. |
 
 ## Authentication — hackathon scope
 
@@ -84,9 +82,9 @@ Claude (guided by the ts-debug skill) runs:
                         ↓
 CLI returns structured case file:
   {
-    "identity":  { "auth0_id": "...", "cognito_sub": "...", "status": "FORCE_CHANGE_PASSWORD" },
+    "identity":  { "auth0Id": "...", "cognitoSub": "...", "status": "FORCE_CHANGE_PASSWORD" },
     "attempts":  [4 entries, all "PasswordResetRequiredException"],
-    "tokens":    { "last_success": "2026-04-30T14:22Z", "last_failure": "2026-05-04T09:14Z" },
+    "tokens":    { "lastSuccess": "2026-04-30T14:22Z", "lastFailure": "2026-05-04T09:14Z" },
     "lock":      { "locked": false }
   }
                         ↓
