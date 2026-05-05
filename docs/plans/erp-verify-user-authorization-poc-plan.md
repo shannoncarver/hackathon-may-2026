@@ -762,6 +762,7 @@ On a clean Claude Code session (or after `~/.claude/plugins/cache/` cleared):
   - **PAT** (last resort): `https://<token>@github.com/...` URL form. Credential-rotation hazard.
 - Version-pinning: marketplace `ref` moves from `main` → tag `erp-authz-v0.2.0`; semver-bump on every change. Operators opt into `main` for canary.
 - Fix B1 (inactive-superuser hides user-in-tenant) and B2 (missing-tenant doesn't override) in the C# endpoint, then update this skill to match.
+- **Claude Cowork compatibility (deferred 2026-05-05).** The current skill is Claude Code-native: `/plugin marketplace add` flow, local Python + boto3, ambient AWS creds. None of those map to Cowork, which uses a different plugin install UI (Customize → Browse plugins, or admin-uploaded), a sandboxed execution model that constrains arbitrary script bundles, and per-user **connectors** (typically MCP-backed) instead of env-var credential injection. To support Cowork, repackage `verify_authorization.py` as an MCP server (e.g. via `anthropic/mcp-python`), expose `verify_user_authorization` as an MCP tool, host it (locally over stdio or remote with TLS + API-key auth), and register it as a Cowork connector. Estimated effort: ~4–7 hours. Decision recorded after research surfaced that direct install in Cowork is infeasible for a script-bundled skill.
 
 ---
 
