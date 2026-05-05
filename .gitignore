@@ -33,3 +33,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+.obsidian/
+
+# Skill bundles built for Claude Desktop upload (regenerate via the README zip command)
+skills/*.zip
