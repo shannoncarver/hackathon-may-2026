@@ -18,9 +18,10 @@ entities:
   - "wiki/entities/lambda-resource-policy.md"
   - "wiki/entities/atlassian-mcp.md"
   - "wiki/entities/sub-agent.md"
-concepts: []
+concepts:
+  - "wiki/concepts/aws-skill-credential-pattern.md"
 created: 2026-05-04
-updated: 2026-05-04
+updated: 2026-05-05
 ---
 
 # Centralized MCP broker pattern for LINQ

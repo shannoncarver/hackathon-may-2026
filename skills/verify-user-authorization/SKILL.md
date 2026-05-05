@@ -1,8 +1,8 @@
 ---
 name: verify-user-authorization
-description: Verify whether a user is authorized for a LINQ ERP tenant. Use when the user asks "is this user authorized for tenant X", "verify user authorization", "check ERP access for user", "ERP authz check", "harmony auth lookup", "why can't this user log in to ERP", "can this user sign in for a given tenant", or wants the raw erp_users / erp_tenants records as evidence. Reads DynamoDB directly via boto3 and mirrors the HarmonyAuthAuthorize C# endpoint's decision logic. Returns a JSON envelope with authorized=true or false, a status enum (AUTHORIZED_SUPERUSER, AUTHORIZED_USER, USER_NOT_FOUND, USER_DISABLED, SUPERUSER_DISABLED, TENANT_DISABLED, TENANT_MISSING_BUT_USER_AUTHORIZED, TENANT_MISSING_USER_NOT_AUTHORIZED, ERROR), the matched user-record kind, and the raw user and tenant attributes. Dev environment only.
+description: Verify whether a user is authorized for a LINQ ERP tenant. Use when the user asks "is this user authorized for tenant X", "verify user authorization", "check ERP access for user", "ERP authz check", "harmony auth lookup", "why can't this user log in to ERP", "can this user sign in for a given tenant", or wants the raw erp_users / erp_tenants records as evidence. Reads DynamoDB directly via boto3 and mirrors the HarmonyAuthAuthorize C# endpoint's decision logic. Returns a JSON envelope with authorized=true or false, a status enum (AUTHORIZED_SUPERUSER, AUTHORIZED_USER, USER_NOT_FOUND, USER_DISABLED, SUPERUSER_DISABLED, TENANT_DISABLED, TENANT_MISSING_BUT_USER_AUTHORIZED, TENANT_MISSING_USER_NOT_AUTHORIZED, ERROR), the matched user-record kind, and the raw user and tenant attributes. Supports dev and prod; prod runs require explicit --i-understand-this-is-prod opt-in.
 allowed-tools: Bash
-argument-hint: tenant_id and user_email
+argument-hint: tenant_id, user_email, and environment (dev|prod)
 ---
 
 # verify-user-authorization
@@ -52,16 +52,19 @@ Then drag the resulting `.zip` into Claude Desktop's Skills settings.
 
 ## When NOT to use
 
-- Production lookups. This skill is gated to `--environment dev`.
-- Anything that mutates ERP state (read-only).
+- Anything that mutates ERP state. This skill is read-only by design.
+- Production runs from CI without an explicit, named workflow that has been pre-approved by Operations. Interactive prod runs are supported but require `--i-understand-this-is-prod`.
 
 ## Inputs
 
 | Argument | Required | Notes |
 |---|---|---|
-| `tenant_id` | yes | Lowercased internally before key construction. |
-| `user_email` | yes | Must be a valid email; lowercased internally. |
-| `environment` | yes | Only `dev` is accepted in the POC. |
+| `--tenant-id` | yes | Lowercased internally before key construction. |
+| `--user-email` | yes | Must be a valid email; lowercased internally. |
+| `--environment` | yes | `dev` or `prod`. Drives both the AWS profile (`linq-erp-{env}`) and the DynamoDB table prefix (`dev_` for dev, none for prod). |
+| `--i-understand-this-is-prod` | iff `--environment=prod` | Required acknowledgment for any prod run. The script refuses to run prod without it. |
+| `--aws-profile` | no | Override the derived profile (e.g. for break-glass / incident profiles). Pass empty string (`--aws-profile ''`) to use boto3's default credential chain (Lambda role, GHA OIDC, instance profile). See "AWS profiles" below. |
+| `--include-sensitive` | no | Return raw values for `*_id` attributes; default redacts them. |
 
 ## Output envelope (stdout, JSON)
 
@@ -96,11 +99,34 @@ Then drag the resulting `.zip` into Claude Desktop's Skills settings.
 
 ## How to invoke
 
+**Default dev (the 99% case):**
+
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/verify_authorization.py" \
   --tenant-id "<tenant>" \
   --user-email "<email>" \
   --environment dev
+```
+
+**Prod (requires explicit acknowledgment):**
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/verify_authorization.py" \
+  --tenant-id "<tenant>" \
+  --user-email "<email>" \
+  --environment prod \
+  --i-understand-this-is-prod
+```
+
+**Break-glass override profile:**
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/verify_authorization.py" \
+  --tenant-id "<tenant>" \
+  --user-email "<email>" \
+  --environment prod \
+  --i-understand-this-is-prod \
+  --aws-profile linq-erp-prod-incident-2026-05-05
 ```
 
 Pass `--include-sensitive` only when the operator has explicitly asked for the raw `*_id` values (e.g. `db_user_id`, `db_id`, `connection_string_id`). By default, those are returned as the literal string `"<redacted>"` in the authorized envelope. Unauthorized envelopes always return `null` for `user` and `tenant` regardless of this flag.
@@ -112,55 +138,136 @@ The script always exits 0; the JSON envelope on stdout is the only contract. Dia
 | Variable | Default | Notes |
 |---|---|---|
 | `AWS_REGION` | `us-east-1` | Matches `LINQ-ERP-v4/appsettings.json`. |
-| `ERP_USERS_TABLE_NAME` | `dev_erp_users` | Convention `{env}_erp_users`; prod is unprefixed `erp_users`. |
-| `ERP_TENANTS_TABLE_NAME` | `dev_erp_tenants` | Convention `{env}_erp_tenants`; prod is unprefixed `erp_tenants`. |
-| AWS credentials | — | boto3 default chain — see "AWS auth" below. |
+| `LINQ_ERP_AWS_PROFILE` | (unset) | Workflow-level override of the derived `linq-erp-{env}` profile. Wins over the derived default; loses to `--aws-profile`. |
+| `LINQ_AWS_USE_AMBIENT_CHAIN` | (unset) | Set to `1` to skip named-profile resolution entirely; boto3 uses its default credential chain (Lambda role, GHA OIDC, instance profile). |
+| `ERP_USERS_TABLE_NAME` | derived from `--environment` | Override only. Default: `dev_erp_users` for dev, `erp_users` for prod. |
+| `ERP_TENANTS_TABLE_NAME` | derived from `--environment` | Override only. Default: `dev_erp_tenants` for dev, `erp_tenants` for prod. |
+| AWS credentials | — | Resolved via named profile (default) or boto3's default credential chain (when profile is empty / ambient). See "AWS profiles" below. |
 
-## AWS auth — most seamless flow for AWS-console SSO users
+## AWS profiles
 
-If you sign in to the AWS console via SSO / Identity Center, you already have everything boto3 needs. Two patterns, easiest first:
+This skill follows the convention in [Decision 0016](../../docs/decisions/0016-aws-multi-account-skill-credentials.md) — every AWS-touching skill in this repo uses named profiles, derives its target account from `--environment`, and supports a break-glass override.
 
-### Pattern A — paste-from-console (zero setup, ~30s per session)
+### What an AWS profile is
 
-1. Open the AWS access portal (the SSO start page).
-2. Click your dev account → role → **"Command line or programmatic access"**.
-3. Copy the **"Option 1: Set AWS environment variables"** block. It looks like:
-   ```bash
-   export AWS_ACCESS_KEY_ID="ASIA..."
-   export AWS_SECRET_ACCESS_KEY="..."
-   export AWS_SESSION_TOKEN="..."
-   ```
-4. Paste into the same terminal where Claude Code is running. boto3's default credential chain picks them up automatically. Tokens typically last 1–12 hours.
+An AWS profile is a named bundle of "how to get AWS credentials" stored in `~/.aws/config`. Each profile names a target account, a role to assume in that account, and (for SSO) which Identity Center session to use. boto3, the AWS CLI, and every official AWS SDK read the same files — there is no skill-specific credential format.
 
-This is the recommended hackathon path — no AWS CLI configuration, no profile management, just three env vars from a button click.
+### Where profiles are stored
 
-### Pattern B — `aws sso login` (one-time setup, refresh on demand)
+| Path | Purpose | Edited by |
+|---|---|---|
+| `~/.aws/config` | Profile definitions — region, SSO session, role, MFA | You (hand-edit or `aws configure sso`) |
+| `~/.aws/credentials` | Long-lived static IAM keys (legacy) | Usually empty when using SSO |
+| `~/.aws/sso/cache/*.json` | Short-lived SSO access tokens | `aws sso login` writes them |
+| `~/.aws/cli/cache/*.json` | Short-lived role credentials derived from SSO | AWS CLI / boto3 automatically |
 
-```bash
-# One-time:
-aws configure sso
-# Daily / when expired:
-aws sso login --profile <profile-name>
-export AWS_PROFILE=<profile-name>
+You only edit `~/.aws/config`. The cache directories refresh themselves whenever `aws sso login` runs or boto3 needs a fresh credential.
+
+### One-time setup — `~/.aws/config`
+
+Paste this stanza, replacing the placeholder account IDs with the real LINQ account IDs from the AWS access portal. **One `[sso-session linq]` block, one `[profile ...]` per (product × environment).**
+
+```ini
+[sso-session linq]
+sso_start_url = https://linq.awsapps.com/start
+sso_region = us-east-1
+sso_registration_scopes = sso:account:access
+
+[profile linq-erp-dev]
+sso_session = linq
+sso_account_id = 111111111111
+sso_role_name = ERPDevReadOnly
+region = us-east-1
+
+[profile linq-erp-prod]
+sso_session = linq
+sso_account_id = 333333333333
+sso_role_name = ERPProdReadOnly
+region = us-east-1
 ```
 
-boto3 reads `~/.aws/sso/cache/` automatically. Use this if you'll be running the skill many times across days.
+Alternative: run `aws configure sso` for an interactive wizard that creates the same entries. The wizard opens a browser, lets you pick the account and role from your entitled list, and writes the `[profile ...]` block automatically.
 
-Both patterns work with this skill unchanged — boto3's default credential chain order is: env vars (Pattern A) → `AWS_PROFILE` (Pattern B) → instance role. No code changes required.
+### One-time login (per day)
 
-## Least-privilege IAM policy
+```bash
+aws sso login --sso-session linq
+```
+
+Opens a browser, authenticates once, writes a token to `~/.aws/sso/cache/`. **That single token covers every profile that references `sso-session linq`** — both `linq-erp-dev` and `linq-erp-prod`, plus any other LINQ profiles you've configured against the same SSO session. Tokens typically last 8 hours.
+
+### How the skill picks a profile
+
+Resolution order (first match wins):
+
+1. **`--aws-profile <name>`** — explicit operator override (break-glass / incident).
+2. **`LINQ_ERP_AWS_PROFILE` env var** — workflow-level override.
+3. **`LINQ_AWS_USE_AMBIENT_CHAIN=1` env var** — skip named profiles, use boto3's default chain.
+4. **Derived from `--environment`** — `linq-erp-dev` or `linq-erp-prod`. The default path.
+5. **Headless fallback** — `--aws-profile ''` (empty string) → `boto3.Session()` with no profile, default chain (Lambda role, GHA OIDC, instance profile).
+
+The script prints the resolved profile, account ID, and role ARN to stderr before any DynamoDB call (via `sts:GetCallerIdentity`). That line is the per-invocation audit log; check it whenever a result looks suspicious.
+
+### Override — when and how
+
+Use `--aws-profile <name>` when:
+
+- Incident response with a time-boxed elevated role (e.g. `linq-erp-prod-incident-2026-05-05`).
+- Debugging an IAM policy under a non-default role.
+- A coworker handed you a temporary profile name to reproduce their bug.
+
+Do NOT use `--aws-profile` to swap dev↔prod intentionally — that's `--environment`'s job. The override changes *which IAM identity makes the calls*, not *which dataset the calls hit*. Table names always come from `--environment` (or the `ERP_*_TABLE_NAME` env vars), never from the profile.
+
+### Headless / agent / CI
+
+For Lambda, GHA OIDC web-identity, EC2 instance profiles, or any context where named profiles aren't configured, pass `--aws-profile ''` (or set `LINQ_AWS_USE_AMBIENT_CHAIN=1`). The skill calls `boto3.Session()` with no profile and lets the default credential chain resolve credentials from the environment. The audit banner still prints — it'll show `profile=<ambient>` and the resolved account / ARN.
+
+### Troubleshooting
+
+| Symptom (in `reason`) | Fix |
+|---|---|
+| `Could not resolve AWS identity ... aws sso login --sso-session linq` | Run that command. Token expired or never logged in. |
+| `AWS profile 'linq-erp-prod' not found in ~/.aws/config` | Add the `[profile linq-erp-prod]` block (see "One-time setup"). |
+| `AccessDenied: ... is not authorized to perform: dynamodb:GetItem` | Your SSO permission set is missing the role. Ask Operations to grant `ERPDevReadOnly` / `ERPProdReadOnly` for your user. |
+| `Refusing prod run without --i-understand-this-is-prod` | Add the flag. Confirms explicit prod intent. |
+| Wrong account ID in stderr banner | Profile is pointing at the wrong account. Re-check `sso_account_id` in `~/.aws/config`. |
+
+## Least-privilege IAM policies
+
+Two policies — one per environment. Both stay `dynamodb:GetItem`-only; the skill never writes. Prod role grants are managed by Operations, not self-service.
+
+### `ERPDevReadOnly` (dev account)
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ErpAuthzReadOnly",
+      "Sid": "ErpAuthzReadOnlyDev",
       "Effect": "Allow",
       "Action": "dynamodb:GetItem",
       "Resource": [
         "arn:aws:dynamodb:us-east-1:*:table/dev_erp_users",
         "arn:aws:dynamodb:us-east-1:*:table/dev_erp_tenants"
+      ]
+    }
+  ]
+}
+```
+
+### `ERPProdReadOnly` (prod account)
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ErpAuthzReadOnlyProd",
+      "Effect": "Allow",
+      "Action": "dynamodb:GetItem",
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:*:table/erp_users",
+        "arn:aws:dynamodb:us-east-1:*:table/erp_tenants"
       ]
     }
   ]

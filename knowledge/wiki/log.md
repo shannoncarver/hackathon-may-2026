@@ -2,6 +2,44 @@
 
 Append-only chronological record of operations against the knowledge base. One entry per ingest, lint, or major synthesis. Format: `## [YYYY-MM-DD] <op> | <Title>`. Conventions: [`knowledge/SCHEMA.md`](../SCHEMA.md).
 
+## [2026-05-05] lint | Verification re-lint — 3 prior findings confirmed closed, 0 new findings
+
+Read-only re-run of all 8 §7 checks across 23 wiki pages (10 entities, 3 concepts, 15 sources, 1 synthesis) and 14 raw files. Confirmed all three prior-session findings closed:
+
+- **#1 bidirectional drift** — `concepts/aws-skill-credential-pattern.md` `related:` now points at `wiki/synthesis/centralized-mcp-broker.md`; reciprocal `concepts:` link confirmed on the synthesis page.
+- **#2 empty `sources: []`** — `wiki/sources/decision-0016-aws-skill-credentials.md` exists; bidirectional source↔concept link confirmed in both directions.
+- **#3 log op-type mismatch** — `## [2026-05-05] synthesis | …` corrected to `## [2026-05-05] ingest | …` on the original concept-authoring entry.
+
+8/8 §7 checks pass: orphan wiki pages (0), orphan raw files (0), broken links (0), stale claims (0 — all `updated:` within 90-day window), contradictions (0), bidirectional drift (0 — all 18 source↔entity/concept pairs confirmed), unknown product tags (0 — `product:cross-cutting` only), frontmatter completeness (0 missing required fields).
+
+Curator: `40-knowledge-curator` (response validated against `schemas/agents/40-knowledge-curator.schema.json` v2.0.0).
+
+## [2026-05-05] ingest | Decision 0016 — internal source page added to close cite-or-flag gap on AWS skill credential pattern concept
+
+Source: [`wiki/sources/decision-0016-aws-skill-credentials.md`](sources/decision-0016-aws-skill-credentials.md) — new page summarizing the seven Decision 0016 rules (named profiles, declared accounts, resolution order, environment-derived defaults, prod acknowledgment, fail-fast remediation, one SSO session) and the reference implementation pointer and migration path. Bidirectional links established: the source page `concepts:` array points at `wiki/concepts/aws-skill-credential-pattern.md`; the concept page `sources:` array now references `wiki/sources/decision-0016-aws-skill-credentials.md`.
+
+**Unusual case — internal repo source, no raw copy.** Decision 0016 is an in-repo decision record at `docs/decisions/0016-aws-multi-account-skill-credentials.md`, not a public URL. Per SCHEMA §5 ingest step 1, external public docs get a condensed copy in `raw/sources/`; auth-required URLs get a stub. Neither form applies to an in-repo path that is already version-controlled and authoritative. Convention adopted for this and all future internal-source ingests: `raw_path:` points at the canonical `docs/decisions/<file>` location (no copy into `raw/sources/`). The `url:` field carries the same repo-relative path. This interpretation keeps `raw/sources/` free of duplicates of files already under version control in the repo.
+
+Gap closed: BLOCKER — `concepts/aws-skill-credential-pattern.md` `sources: []` empty with an uncitable body (every claim cited Decision 0016 but no wiki source page existed). All concept-body claims are now citable via the new source page.
+
+Index updated: one row added to the Sources table for `decision-0016-aws-skill-credentials`. No new entities or concepts — Decision 0016 elaborates an existing convention.
+
+Curator: `40-knowledge-curator` (response validated against `schemas/agents/40-knowledge-curator.schema.json` v2.0.0).
+
+## [2026-05-05] lint | 3 findings — 2 blockers, 1 advisory
+
+Full §7 lint pass over 22 wiki pages, 14 raw files, the index, and the log. Scope confirmed clean on: orphan wiki pages, orphan raw files, broken links, stale claims, contradictions, unknown product tags, frontmatter completeness (required fields). Three findings against today's new content [`concepts/aws-skill-credential-pattern.md`](concepts/aws-skill-credential-pattern.md) and the prior log entry below:
+
+- **BLOCKER — bidirectional drift.** `concepts/aws-skill-credential-pattern.md` carries `related: ["wiki/concepts/project-format.md"]`, a copy-paste artifact from the concept template. The reverse link is absent from `project-format.md` and the semantic connection is incorrect (hackathon format vs. AWS auth — unrelated).
+- **BLOCKER — empty `sources: []` with uncitable body.** The concept extensively cites [Decision 0016](../../docs/decisions/0016-aws-multi-account-skill-credentials.md) but no `wiki/sources/` page exists for that decision, so the `sources:` array is empty and every body claim is uncitable per the cite-or-flag rule. Suggested fix: ingest Decision 0016 as a wiki source page.
+- **ADVISORY — log op-type mismatch.** The 2026-05-05 entry below uses `synthesis` in the header but the artifact is a `concept` page. Per SCHEMA §8, `synthesis` is reserved for `wiki/synthesis/`. Correct op-type is `ingest` or `concept`.
+
+Curator: `40-knowledge-curator` (response validated against `schemas/agents/40-knowledge-curator.schema.json` v2.0.0). Read-only run — no wiki, raw, or schema files modified by the lint. Fixes are deferred to the user's call.
+
+## [2026-05-05] ingest | AWS skill credential pattern — concept page authored under Decision 0016
+
+[Decision 0016](../../docs/decisions/0016-aws-multi-account-skill-credentials.md) establishes the convention for how every AWS-touching skill in this repo authenticates: named profiles via `boto3.Session(profile_name=...)`, environment-derived defaults (`linq-<product>-{env}`), `--i-understand-this-is-prod` guardrail, `--aws-profile` break-glass override, and an `sts:GetCallerIdentity` audit banner before any downstream call. The concept page [`concepts/aws-skill-credential-pattern.md`](concepts/aws-skill-credential-pattern.md) summarizes the pattern for sub-agents authoring or reviewing AWS-touching skills; the auto-load rule [`.claude/rules/aws-skill-credentials.md`](../../.claude/rules/aws-skill-credentials.md) makes the rules apply on dispatch. Reference implementation: [`skills/verify-user-authorization/`](../../skills/verify-user-authorization/SKILL.md), now extended from dev-only to dev + prod with the override and prod-acknowledgment flags wired through.
+
 ## [2026-05-05] milestone | Decision 0015 M1 Phase B — bootstrap CFN + GHA workflows, OIDC round-trip proven
 
 Per cross-cutting decision **CC-2** in [`docs/research/0015-centralized-platform-mcp/implementation/00-overview.md`](../../docs/research/0015-centralized-platform-mcp/implementation/00-overview.md), the M1 Platform Services build lives in [shannoncarver/linq-platform-mcp](https://github.com/shannoncarver/linq-platform-mcp), not this hackathon repo. Phase B (bootstrap CFN templates + GHA workflows per [`implementation/01-cloudformation.md`](../../docs/research/0015-centralized-platform-mcp/implementation/01-cloudformation.md) §2.4 and [`implementation/02-github-actions.md`](../../docs/research/0015-centralized-platform-mcp/implementation/02-github-actions.md) §2.2–2.5) is complete. The cross-account GitHub Actions OIDC trust round-trip is proven end-to-end on a no-op merge to `main`.
