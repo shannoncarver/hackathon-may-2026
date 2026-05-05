@@ -32,7 +32,8 @@ claude
 | [`CLAUDE.md`](CLAUDE.md) | Coordinator project context — auto-loaded by Claude Code. |
 | [`.claude/agents/`](.claude/agents/) | Sub-agent definitions (one Markdown file each). |
 | [`.claude/commands/`](.claude/commands/) | Project slash commands — `/kb-ingest`, `/kb-lint`. |
-| [`.claude/skills/`](.claude/skills/) | Reusable how-to knowledge as `SKILL.md` folders. |
+| [`.claude/skills/`](.claude/skills/) | Reusable how-to knowledge as `SKILL.md` folders. Includes a symlink to [`skills/verify-user-authorization`](skills/verify-user-authorization) so it auto-loads alongside the project-scoped skills. |
+| [`skills/`](skills/) | Standalone skills surfaced for repo-browsing and zip install into Claude Desktop. See [Skills](#skills) below. |
 | [`.claude/rules/`](.claude/rules/) | Path-loaded rules — coordination, knowledge base. |
 | [`.claude/output-styles/demo.md`](.claude/output-styles/demo.md) | Stakeholder-facing presentation format. |
 | [`.mcp.json`](.mcp.json) | MCP server registry, version-pinned. |
@@ -48,6 +49,37 @@ claude
 - Cite sources for any pattern pulled from Anthropic docs or community repos.
 - Identify the project pillar at the start of every task.
 - Capture structural decisions as decision records in [`docs/decisions/`](docs/decisions/).
+
+## Skills
+
+The [`skills/`](skills/) folder is the canonical home for skills shipped by this repo. Each subfolder is a standalone skill — drop it anywhere Claude Code or Claude Desktop will look for skills.
+
+Currently shipped:
+
+| Skill | Purpose |
+| --- | --- |
+| [`skills/verify-user-authorization/`](skills/verify-user-authorization/) | Verify whether a user is authorized for a LINQ ERP tenant by reading `erp_users` and `erp_tenants` from DynamoDB. Mirrors the `HarmonyAuthAuthorize` C# decision logic. Dev environment only. |
+
+### How to install a skill
+
+**In this repo (Claude Code).** Already wired — each `skills/<name>/` is symlinked from `.claude/skills/<name>` and auto-loads when you open the repo in Claude Code.
+
+**In another repo / globally (Claude Code).** Symlink the skill folder into the target location:
+
+```bash
+ln -s "$(pwd)/skills/<name>" ~/.claude/skills/<name>          # globally
+ln -s "$(pwd)/skills/<name>" /path/to/other-repo/.claude/skills/<name>   # one project
+```
+
+**In Claude Desktop (the app, not Claude Code).** Zip and upload:
+
+```bash
+cd skills && zip -r <name>.zip <name>/
+```
+
+Then drag the resulting `.zip` into Claude Desktop's **Settings → Capabilities → Skills**.
+
+> Windows users: run `git config --global core.symlinks true` once before cloning so the in-repo `.claude/skills/` symlinks resolve.
 
 ## Adding knowledge
 

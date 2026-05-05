@@ -16,6 +16,32 @@ Reproduces the LINQ ERP `HarmonyAuthAuthorize` C# endpoint's decision logic loca
 
 If you need the corrected/intuitive logic instead, ask the user before deviating.
 
+## Install
+
+Three paths, depending on where you want to use the skill.
+
+**1. In this repo (Claude Code) — already installed.** Clone the repo and start Claude Code from the repo root. The skill auto-loads via the [.claude/skills/verify-user-authorization](../../.claude/skills/verify-user-authorization) symlink. No further steps.
+
+**2. In another repo or globally (Claude Code).** Symlink this folder into the target location:
+
+```bash
+# Globally for all your Claude Code sessions:
+ln -s "$(pwd)/skills/verify-user-authorization" ~/.claude/skills/verify-user-authorization
+
+# Or into a specific project:
+ln -s "$(pwd)/skills/verify-user-authorization" /path/to/other-repo/.claude/skills/verify-user-authorization
+```
+
+**3. In Claude Desktop (the app, not Claude Code).** Zip the skill folder and upload via Settings → Capabilities → Skills:
+
+```bash
+cd skills && zip -r verify-user-authorization.zip verify-user-authorization/
+```
+
+Then drag the resulting `.zip` into Claude Desktop's Skills settings.
+
+> Windows users: enable git symlink support once with `git config --global core.symlinks true` before cloning.
+
 ## When to use
 
 - "Is `alice@example.com` authorized for tenant `acme-isd`?"

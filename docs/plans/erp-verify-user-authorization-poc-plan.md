@@ -816,3 +816,27 @@ On a clean Claude Code session (or after `~/.claude/plugins/cache/` cleared):
 ## Appendix: clarifying questions
 
 All resolved — see §14.
+
+---
+
+## 2026-05-05 update — pivoted away from plugin/marketplace packaging
+
+PR #10 shipped the skill packaged as a Claude Code plugin (`erp-authz`) inside a marketplace (`linq-erp-skills`). Smoke-testing turned up two problems:
+
+1. **`/plugin` is not available in Claude Desktop's Claude Code surface.** Running `/plugin marketplace add shannoncarver/hackathon-may-2026` from a Claude Code session launched inside Claude Desktop (macOS) returns `/plugin isn't available in this environment.` The marketplace install path is unreachable from where the hackathon demo will run.
+2. **Plugin scaffolding obscured a single skill** behind three nested wrappers (`.claude-plugin/`, `plugins/erp-authz/.claude-plugin/`, `plugins/erp-authz/skills/...`).
+
+Pivot — current shape:
+
+- Skill lives at top-level [`skills/verify-user-authorization/`](../../skills/verify-user-authorization/) — obvious entry point for repo browsers and the canonical source for the zip-into-Claude-Desktop install path.
+- A checked-in symlink `.claude/skills/verify-user-authorization → ../../skills/verify-user-authorization` keeps Claude Code auto-loading working when this repo is opened.
+- `.claude-plugin/marketplace.json` and `plugins/erp-authz/` deleted.
+- `SKILL.md` and `README.md` document three install paths: in-repo (auto), symlink-into-`~/.claude/skills/`, and zip-for-Claude-Desktop.
+
+Decision logic, redaction rules, IAM policy, and the C#-mirroring behavior described in §§2–13 are unchanged — only the distribution shape moved.
+
+Phase D of §16 (clean-machine `/plugin marketplace add` install) is superseded; verify instead by:
+
+- Cloning the repo, opening Claude Code from the repo root, triggering the skill via natural language.
+- `ln -s` into `~/.claude/skills/` and triggering from an unrelated project.
+- Zipping `verify-user-authorization/` and uploading to Claude Desktop, then triggering from a Claude Desktop conversation.
