@@ -1,12 +1,12 @@
 ---
-status: Proposed
+status: Accepted
 date: 2026-05-04
 category: architecture
 ---
 
 # Decision 0015 — Centralized Platform MCP Server with cross-account dispatch
 
-**Status:** Proposed (2026-05-04). Backed by the architecture review in [`docs/research/0015-centralized-platform-mcp/`](../research/0015-centralized-platform-mcp/00-overview.md).
+**Status:** Accepted (2026-05-04). Promoted from Proposed on 2026-05-04 — see [Status history](#status-history). Backed by the architecture review in [`docs/research/0015-centralized-platform-mcp/`](../research/0015-centralized-platform-mcp/00-overview.md) and the implementation plan in [`docs/research/0015-centralized-platform-mcp/implementation/`](../research/0015-centralized-platform-mcp/implementation/00-overview.md).
 
 ## Context
 
@@ -60,7 +60,15 @@ Scope and acceptance criteria: [`04-phase-1-poc.md`](../research/0015-centralize
 
 ### Open questions
 
-Stakeholder decision log: [`05-open-questions.md`](../research/0015-centralized-platform-mcp/05-open-questions.md). Each question carries the guess we'd make if forced to decide today. The questions that block Accepted status are: LINQ Auth0 enterprise tier and M2M entitlement; whether all 4 product accounts share one AWS Organization; existence of a centralized logging account. (Q1 — Auth0 RFC 8693 support — was resolved on 2026-05-04 by adopting Path C for the IdentityBroker; see [`deep-dives/identity-broker-implementation.md`](../research/0015-centralized-platform-mcp/deep-dives/identity-broker-implementation.md).)
+Stakeholder decision log: [`05-open-questions.md`](../research/0015-centralized-platform-mcp/05-open-questions.md). Each question carries the guess we'd make if forced to decide today. The questions that originally blocked Accepted status — Q2 LINQ Auth0 enterprise tier and M2M entitlement, Q3 whether all 4 product accounts share one AWS Organization, Q4 existence of a centralized logging account — were accepted at promotion (2026-05-04) with their forced-today defaults applied per cross-cutting decision **CC-5** in [`implementation/00-overview.md`](../research/0015-centralized-platform-mcp/implementation/00-overview.md#cross-cutting-decisions-reconciled). Q1 — Auth0 RFC 8693 support — was resolved on 2026-05-04 by adopting Path C for the IdentityBroker; see [`deep-dives/identity-broker-implementation.md`](../research/0015-centralized-platform-mcp/deep-dives/identity-broker-implementation.md). Each forced-today default carries traceable assumption tags `[ASSUMED]` in the implementation artifacts; if any default proves wrong, the affected artifact owner files an amendment to this ADR.
+
+## Status history
+
+| Date | Status | Notes |
+|---|---|---|
+| 2026-05-04 | Proposed | ADR drafted; backed by 5-role architecture review in [`docs/research/0015-centralized-platform-mcp/`](../research/0015-centralized-platform-mcp/00-overview.md). 4 blocking open questions raised in [`05-open-questions.md`](../research/0015-centralized-platform-mcp/05-open-questions.md). |
+| 2026-05-04 | (Q1 closed) | Auth0 RFC 8693 dependency closed by Path C — Platform-owned KMS-signed JWT. Wire shape RFC 8693-compatible so future migration is a single-Lambda swap. See [`deep-dives/identity-broker-implementation.md`](../research/0015-centralized-platform-mcp/deep-dives/identity-broker-implementation.md). |
+| 2026-05-04 | Accepted | Promoted from Proposed. Q2–Q4 accepted with forced-today defaults per **CC-5** in [`implementation/00-overview.md`](../research/0015-centralized-platform-mcp/implementation/00-overview.md#cross-cutting-decisions-reconciled): Q2 — assume Auth0 entitlement ≥10 M2M apps; Q3 — all four product accounts share one AWS Organization; Q4 — centralized logging-OU account exists. Implementation plan and 13 reference artifacts under [`implementation/`](../research/0015-centralized-platform-mcp/implementation/). M1 build unblocks. |
 
 ## Sources
 
