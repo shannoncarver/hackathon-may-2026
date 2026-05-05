@@ -20,6 +20,24 @@ claude                       # opens Claude Code in this project
 
 The Atlassian MCP server uses per-user OAuth — the first invocation prompts for consent.
 
+## Auth0 Logs Setup (optional)
+
+To use the `/auth0-logs` skill, you need M2M credentials for the sandbox tenant.
+
+1. In the Auth0 Dashboard at <https://manage.auth0.com>, switch to the `linq-accounts-sandbox` tenant.
+2. Navigate to **Applications → Applications → Create Application**.
+3. Choose **Machine to Machine Applications**, name it descriptively (e.g., `LINQ AI Workflow - Logs Reader`), and click **Create**.
+4. When prompted, authorize against **Auth0 Management API** with the single scope `read:logs` (principle of least privilege).
+5. From the application's Settings tab, copy the **Domain**, **Client ID**, and **Client Secret** into `.env`:
+   ```
+   AUTH0_DOMAIN=linq-accounts-sandbox.us.auth0.com
+   AUTH0_CLIENT_ID=...
+   AUTH0_CLIENT_SECRET=...
+   ```
+6. Test: run `/auth0-logs show me failed logins in the last 24 hours`.
+
+The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL). Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
+
 ## Adding a new sub-agent
 
 The pattern is canonicalized in [`docs/agent/17-eng-ai.md`](../agent/17-eng-ai.md). Steps:
