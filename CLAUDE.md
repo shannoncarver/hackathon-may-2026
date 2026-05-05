@@ -71,6 +71,7 @@ The system is built around six pillars. Most tasks map to one of these — when 
 - **Capture decisions in `docs/`.** Every structural decision, link, and rationale lives in the repo so future agents and teammates can onboard without external context.
 - **Identify the pillar.** When starting a task, state which of the six pillars it belongs to. If it doesn't fit one, flag that.
 - **Knowledge base usage.** Conventions live in [`knowledge/SCHEMA.md`](knowledge/SCHEMA.md). Sub-agents that touch knowledge follow [`.claude/rules/knowledge-base.md`](.claude/rules/knowledge-base.md), which auto-loads on every dispatch. To add a source, run `/kb-ingest <URL-or-path>`. To health-check the wiki, run `/kb-lint`. Operational protocol: [`.claude/skills/kb-ingest/SKILL.md`](.claude/skills/kb-ingest/SKILL.md).
+- **AWS-touching skills.** Follow the convention in [Decision 0016](docs/decisions/0016-aws-multi-account-skill-credentials.md) — named profiles, environment-derived defaults (`linq-<product>-{env}`), `--i-understand-this-is-prod` guardrail, `--aws-profile` override for break-glass, and the `sts:GetCallerIdentity` audit banner before any downstream call. Reference implementation: [`skills/verify-user-authorization/`](skills/verify-user-authorization/SKILL.md). Auto-load rule: [`.claude/rules/aws-skill-credentials.md`](.claude/rules/aws-skill-credentials.md).
 
 ## Brand and Voice
 

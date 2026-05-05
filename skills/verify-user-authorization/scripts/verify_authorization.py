@@ -32,7 +32,12 @@ from typing import Any
 
 try:
     import boto3
-    from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
+    from botocore.exceptions import (
+        BotoCoreError,
+        ClientError,
+        NoCredentialsError,
+        ProfileNotFound,
+    )
 except ImportError as exc:  # pragma: no cover
     print(
         json.dumps(
@@ -120,10 +125,24 @@ def _get_item(table, key, label):
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Verify ERP user authorization (dev only).")
+    parser = argparse.ArgumentParser(description="Verify ERP user authorization (dev + prod).")
     parser.add_argument("--tenant-id", required=True)
     parser.add_argument("--user-email", required=True)
-    parser.add_argument("--environment", required=True, choices=["dev"])
+    parser.add_argument("--environment", required=True, choices=["dev", "prod"])
+    parser.add_argument(
+        "--aws-profile",
+        default=None,
+        help=(
+            "Override the derived AWS profile (default: linq-erp-{env}). "
+            "Pass empty string to use boto3's default credential chain "
+            "(headless / agent context)."
+        ),
+    )
+    parser.add_argument(
+        "--i-understand-this-is-prod",
+        action="store_true",
+        help="Required when --environment=prod. Forces explicit operator intent.",
+    )
     parser.add_argument(
         "--include-sensitive",
         action="store_true",
@@ -134,6 +153,19 @@ def main() -> int:
     global _INCLUDE_SENSITIVE
     _INCLUDE_SENSITIVE = bool(args.include_sensitive)
 
+    # Prod guardrail — explicit acknowledgment required for any prod run.
+    if args.environment == "prod" and not args.i_understand_this_is_prod:
+        _emit(_envelope(
+            False,
+            "ERROR",
+            (
+                "Refusing prod run without --i-understand-this-is-prod. "
+                "Re-run with the flag if you intended to query production."
+            ),
+            None, None, None,
+        ))
+        return 0
+
     user_email = args.user_email.strip().lower()
     tenant_id = args.tenant_id.strip().lower()
 
@@ -142,17 +174,77 @@ def main() -> int:
         return 0
 
     region = os.environ.get("AWS_REGION", "us-east-1")
-    users_table_name = os.environ.get("ERP_USERS_TABLE_NAME", "dev_erp_users")
-    tenants_table_name = os.environ.get("ERP_TENANTS_TABLE_NAME", "dev_erp_tenants")
+
+    # Profile resolution order (first match wins):
+    #   1. --aws-profile <name>     (explicit operator override; "" → ambient chain)
+    #   2. LINQ_ERP_AWS_PROFILE     (workflow-level env override)
+    #   3. LINQ_AWS_USE_AMBIENT_CHAIN=1 → ambient chain
+    #   4. derived → "linq-erp-{env}"
+    if args.aws_profile is not None:
+        profile = args.aws_profile  # may be "" → ambient chain
+    elif os.environ.get("LINQ_ERP_AWS_PROFILE"):
+        profile = os.environ["LINQ_ERP_AWS_PROFILE"]
+    elif os.environ.get("LINQ_AWS_USE_AMBIENT_CHAIN") == "1":
+        profile = ""
+    else:
+        profile = f"linq-erp-{args.environment}"
+
+    # Table-name resolution: env var override; otherwise derive from --environment.
+    # Convention: dev tables are prefixed (`dev_erp_users`), prod tables are unprefixed.
+    table_prefix = "" if args.environment == "prod" else f"{args.environment}_"
+    users_table_name = os.environ.get("ERP_USERS_TABLE_NAME", f"{table_prefix}erp_users")
+    tenants_table_name = os.environ.get("ERP_TENANTS_TABLE_NAME", f"{table_prefix}erp_tenants")
+
+    # Phase 1: session construction. ProfileNotFound is the canonical "user has
+    # not added the [profile <name>] block to ~/.aws/config" error.
+    try:
+        session_kwargs = {"profile_name": profile} if profile else {}
+        session = boto3.Session(**session_kwargs)
+    except ProfileNotFound as exc:
+        _emit(_envelope(
+            False,
+            "ERROR",
+            (
+                f"AWS profile {profile!r} not found in ~/.aws/config. "
+                f"Add a [profile {profile}] block (see SKILL.md 'AWS profiles' "
+                f"section) or pass --aws-profile '' for the ambient chain. "
+                f"Underlying: {exc}"
+            ),
+            None, None, None,
+        ))
+        return 0
+
+    # Phase 2: identity resolution. sts:GetCallerIdentity doubles as
+    # (a) the resolved-account audit banner and (b) the fail-fast credential
+    # validity check. Any expired SSO token, missing creds, or unconfigured
+    # ambient chain surfaces here before we touch DynamoDB.
+    try:
+        sts = session.client("sts", region_name=region)
+        ident = sts.get_caller_identity()
+    except (NoCredentialsError, ClientError, BotoCoreError) as exc:
+        _emit(_envelope(
+            False,
+            "ERROR",
+            (
+                f"Could not resolve AWS identity (profile={profile or '<ambient>'!r}). "
+                f"Run: aws sso login --sso-session linq. Underlying: {exc}"
+            ),
+            None, None, None,
+        ))
+        return 0
 
     print(
-        f"[verify_authorization] region={region} users={users_table_name} "
-        f"tenants={tenants_table_name} email={user_email} tenant={tenant_id}",
+        f"[verify_authorization] env={args.environment} "
+        f"profile={profile or '<ambient>'} "
+        f"account={ident['Account']} arn={ident['Arn']} "
+        f"users={users_table_name} tenants={tenants_table_name} "
+        f"email={user_email} tenant={tenant_id}",
         file=sys.stderr,
     )
 
+    # Phase 3: DynamoDB reads.
     try:
-        ddb = boto3.resource("dynamodb", region_name=region)
+        ddb = session.resource("dynamodb", region_name=region)
         users_table = ddb.Table(users_table_name)
         tenants_table = ddb.Table(tenants_table_name)
 
@@ -175,9 +267,6 @@ def main() -> int:
             {"PK": f"#TEN#{tenant_id}", "SK": "#TEN#"},
             label="tenant",
         )
-    except NoCredentialsError as exc:
-        _emit(_envelope(False, "ERROR", f"AWS credentials not found: {exc}", None, None, None))
-        return 0
     except (ClientError, BotoCoreError) as exc:
         _emit(_envelope(False, "ERROR", f"DynamoDB error: {exc}", None, None, None))
         return 0
