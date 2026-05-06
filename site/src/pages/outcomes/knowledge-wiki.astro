@@ -1,0 +1,77 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="Three-layer LLM-wiki for project knowledge"
+  description="Karpathy-style raw / wiki / SCHEMA pattern — immutable sources, LLM-curated synthesis, audit-friendly provenance for every claim."
+  eyebrow="Outcome"
+  lede="We proved that a three-layer knowledge base — immutable raw sources, LLM-curated wiki, and a canonical schema — gives every agent auditable provenance without bloating the root context."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Outcomes', href: join('/outcomes/') },
+    { label: 'Knowledge wiki' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li>Shipped a three-layer wiki — <code>knowledge/raw/</code> (immutable), <code>knowledge/wiki/</code> (LLM-curated), <code>knowledge/SCHEMA.md</code> (canonical contract) — with one fully-worked ingest example.</li>
+      <li>An auto-loading path rule (<code>.claude/rules/knowledge-base.md</code>) enforces wiki-first fact-checking across every sub-agent without touching individual prompts.</li>
+      <li>Decision 0013 supersedes the earlier two-folder Decision 0004 and anchors the standing architecture.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="overview">Overview</h2>
+  <p>
+    The knowledge base is the memory layer of the LINQ AI workflow system. Before this work, knowledge lived in ad-hoc prompts and unstructured context — agents fabricated or paraphrased claims they couldn't source. The goal was a structure that separates immutable inputs from synthesized outputs, enforces provenance, and scales as the team ingests more LINQ product documentation.
+  </p>
+  <p>
+    Decision 0013 adopts the three-layer LLM-wiki pattern from Andrej Karpathy's public gist, adapted for Claude Code's path-loaded rules. It supersedes Decision 0004, which had proposed a two-folder shape (<code>knowledge/_shared/</code> and <code>knowledge/linq-products/</code>) but left no opinion on what a knowledge file is, how sources relate to summaries, or how agents should consume either. The new shape answers all three.
+  </p>
+  <p>
+    The wiki organizes content into five buckets — <code>entities/</code> (real-world things), <code>concepts/</code> (patterns and principles), <code>sources/</code> (one summary per ingested source), <code>synthesis/</code> (cross-cutting analysis), and <code>cases/</code> (resolved debug cases). LINQ products are frontmatter tags, not folders, because a single entity often spans multiple products. The <code>SCHEMA.md</code> file is the canonical contract: frontmatter spec, naming rules, ingest and query workflows, and lint checks.
+  </p>
+  <p>
+    The auto-loading rule (<code>.claude/rules/knowledge-base.md</code>) fires whenever any agent works in <code>.claude/agents/**</code> or <code>knowledge/**</code>. It encodes wiki-first, cite-or-flag, gap-routing, and trust-boundary protocols, so new agents inherit the behavior without per-prompt instruction. The first worked example — the Anthropic Claude Code sub-agents documentation, ingested 2026-05-03 — traces the full chain from raw capture to wiki entity to source summary.
+  </p>
+
+  <h2 id="what-we-shipped">What we shipped</h2>
+  <ul>
+    <li><strong><code>knowledge/SCHEMA.md</code></strong> — the canonical contract: five-bucket wiki structure, full frontmatter spec for each bucket, naming rules, eight-step ingest workflow, query and lint workflows, trust-boundary guidance, and an operations table. <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/knowledge/SCHEMA.md">View on GitHub</a>.</li>
+    <li><strong><code>knowledge/raw/</code></strong> — immutable curated sources. Public docs are stored as condensed-with-citation copies; auth-required URLs (Confluence, Jira) are stored as frontmatter stubs. Raw files are never edited in place. <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/knowledge/raw">View on GitHub</a>.</li>
+    <li><strong><code>knowledge/wiki/</code></strong> — LLM-maintained markdown: <code>entities/</code>, <code>concepts/</code>, <code>sources/</code>, <code>synthesis/</code>, <code>cases/</code>, plus <code>index.md</code> (master catalog) and <code>log.md</code> (append-only chronological record). Seeded with one worked example on 2026-05-03. <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/knowledge/wiki">View on GitHub</a>.</li>
+    <li><strong><code>.claude/rules/knowledge-base.md</code></strong> — path-loaded auto-load rule that enforces the wiki-first, cite-or-flag, and gap-routing protocols across all sub-agents. <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/rules/knowledge-base.md">View on GitHub</a>.</li>
+    <li><strong><code>.claude/skills/kb-ingest/SKILL.md</code></strong> — the <code>/kb-ingest</code> ingest skill: URL classification (wiki-entity scan, static-table fallback, public WebFetch), pre-flight slug and tag computation, curator dispatch, and post-ingest reporting. <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/kb-ingest/SKILL.md">View on GitHub</a>.</li>
+    <li><strong><code>/kb-lint</code> health-check command</strong> — checks for orphans, broken links, stale dates, bidirectional-link drift, unknown product tags, and frontmatter completeness across the entire wiki. Recommended after every ingest.</li>
+  </ul>
+
+  <h2 id="what-we-learned">What we learned</h2>
+  <ul>
+    <li>Separating immutable raw sources from LLM-curated wiki pages is the single most important structural choice — it makes every claim traceable to a specific file and date.</li>
+    <li>Content-type buckets (entities, concepts, sources, synthesis) outperform product-folder hierarchies because most knowledge spans products; forcing a single folder home creates duplication or ambiguity.</li>
+    <li>A path-loaded auto-load rule scales better than per-agent prompt edits — new agents inherit the wiki-first protocol without retrofitting existing prompts.</li>
+    <li>The lint workflow surfaces problems early enough that orphans and broken links never accumulate; running it after each ingest keeps the wiki clean by construction.</li>
+  </ul>
+
+  <h2 id="whats-next">What's next</h2>
+  <ul>
+    <li>Decision 0014 (canonical LINQ product-slug list) is reserved but not yet authored — until it lands, all pages carry the <code>product:cross-cutting</code> tag as a placeholder.</li>
+    <li>Expand raw and wiki coverage to additional LINQ products (Harmony Auth, ERP, CRM, and others — specific product list: unable to verify at this time).</li>
+    <li>Automate the <code>/kb-lint</code> check in CI so every PR that touches <code>knowledge/</code> runs lint as a required gate.</li>
+    <li>When the centralized Platform MCP server (Decision 0015, M4+) reaches GA, evaluate extending <code>kb-ingest</code> URL routing to use the IdentityBroker rather than per-user OAuth re-consent.</li>
+  </ul>
+
+  <h2 id="deep-dive">Deep dive</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/pillars/1-knowledge-base.md">Pillar 1 — Knowledge base</a></li>
+    <li><strong>Decision (canonical):</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0013-karpathy-wiki-pattern.md">Decision 0013 — Three-layer LLM-wiki pattern</a></li>
+    <li><strong>Decision (superseded):</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0004-knowledge-base-shape.md">Decision 0004 — Knowledge base shape (superseded by 0013)</a></li>
+    <li><strong>Source — schema:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/knowledge/SCHEMA.md"><code>knowledge/SCHEMA.md</code></a></li>
+    <li><strong>Source — wiki:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/knowledge/wiki"><code>knowledge/wiki/</code></a></li>
+    <li><strong>Tutorial:</strong> <a href={join('/tutorials/kb-ingest/')}>kb-ingest skill walkthrough</a></li>
+  </ul>
+</ArticleLayout>

@@ -1,0 +1,106 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import OutcomeCard from '../../components/OutcomeCard.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+
+const tutorials = [
+  {
+    href: join('/tutorials/auth0-logs/'),
+    pillar: 'Skill · Identity',
+    status: 'shipped' as const,
+    title: 'auth0-logs',
+    summary: 'Query the LINQ sandbox Auth0 tenant in plain English. Translates your prompt into a Lucene query and returns recent authentication events.',
+  },
+  {
+    href: join('/tutorials/auth0-sec/'),
+    pillar: 'Skill · Identity',
+    status: 'shipped' as const,
+    title: 'auth0-sec',
+    summary: 'Inspect a subject — IP, user, or tenant-wide policy — and surface block state, lockouts, and attack-protection configuration.',
+  },
+  {
+    href: join('/tutorials/auth0-stats/'),
+    pillar: 'Skill · Identity',
+    status: 'shipped' as const,
+    title: 'auth0-stats',
+    summary: 'Tenant health dashboard by natural-language window: daily volume, MAU, failure rate, MFA adoption, top connections.',
+  },
+  {
+    href: join('/tutorials/ha-debug/'),
+    pillar: 'Skill · Support',
+    status: 'shipped' as const,
+    title: 'ha-debug',
+    summary: 'Investigate a Harmony-Auth support ticket end-to-end. Assembles a case file from DynamoDB, CloudWatch, Cognito, and Auth0.',
+  },
+  {
+    href: join('/tutorials/kb-ingest/'),
+    pillar: 'Skill · Knowledge',
+    status: 'shipped' as const,
+    title: 'kb-ingest',
+    summary: 'Ingest a URL or file into the LINQ knowledge base. Classifies the source, dispatches the curator, and updates the wiki.',
+  },
+  {
+    href: join('/tutorials/verify-user-authorization/'),
+    pillar: 'Skill · Support',
+    status: 'shipped' as const,
+    title: 'verify-user-authorization',
+    summary: 'Confirm whether a user is authorized for a LINQ ERP tenant. Reads DynamoDB directly and mirrors the HarmonyAuthAuthorize endpoint logic.',
+  },
+];
+
+const featured = {
+  href: join('/tutorials/incident-triage/'),
+  pillar: 'Combined workflow',
+  status: 'shipped' as const,
+  title: 'Incident triage — five skills in one chain',
+  summary: 'Walk a realistic LINQ incident from "failed logins from one IP" to a closed case, then back into the wiki for the next on-call. The story that makes the system feel like a system, not a list.',
+};
+---
+
+<ArticleLayout
+  title="Tutorials"
+  eyebrow="Skill walkthroughs"
+  lede="One coordinator, six skills, one incident resolved in minutes. Start with the combined workflow to see the chain in action — then drill into per-skill pages for the implementation detail."
+  breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'Tutorials' }]}
+>
+  <h2>Featured walkthrough</h2>
+  <div class="featured">
+    <OutcomeCard
+      href={featured.href}
+      pillar={featured.pillar}
+      status={featured.status}
+      title={featured.title}
+      summary={featured.summary}
+    />
+  </div>
+
+  <h2>Per-skill tutorials</h2>
+  <div class="grid">
+    {tutorials.map((t) => (
+      <OutcomeCard
+        href={t.href}
+        pillar={t.pillar}
+        status={t.status}
+        title={t.title}
+        summary={t.summary}
+      />
+    ))}
+  </div>
+</ArticleLayout>
+
+<style>
+  .featured {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 16px 0 36px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 16px 0 32px;
+  }
+</style>

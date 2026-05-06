@@ -1,0 +1,154 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="kb-ingest"
+  description="Ingest a URL or file into the LINQ knowledge base — public web docs, auth-required Confluence/Jira, or files anywhere on disk."
+  eyebrow="Tutorial"
+  lede="After this page, you will be able to add any public URL, Confluence page, or local file to the LINQ knowledge base with a single slash command."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Tutorials', href: join('/tutorials/') },
+    { label: 'kb-ingest' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li><strong>What it does:</strong> Classifies a URL or file path, fetches its content via the correct channel (public fetch, MCP-mediated auth, or in-repo read), and dispatches the knowledge-curator to stage raw and wiki files.</li>
+      <li><strong>When to reach for it:</strong> A teammate says "add this to the wiki," you paste a Confluence link into the chat, or you want a public spec available for future agent lookups.</li>
+      <li><strong>The one command to know:</strong> <code>/kb-ingest https://example.com/some-spec</code></li>
+    </ul>
+  </Callout>
+
+  <h2 id="when-to-use">When to use this skill</h2>
+  <p>
+    Use kb-ingest whenever you want a document — a public web page, a Confluence page, a Jira page,
+    or a file on disk — to become part of the three-layer knowledge wiki. Once ingested, every agent
+    in the system can cite the source and retrieve its content without re-fetching it. The skill
+    handles authentication automatically: URLs on Confluence and Jira are fetched through the
+    Atlassian MCP, while public URLs use WebFetch, and local files are processed in place.
+  </p>
+  <p>
+    kb-ingest is <strong>not</strong> the right tool for authoring sub-agent prompts or schemas
+    (that is eng-ai's domain), for MCP connector configuration, or for demo-facing content (that
+    is the hackathon coordinator's domain). Architecture decisions about the wiki structure itself
+    live in <a href={join('/how-it-works/')}>the knowledge-base pillar</a>.
+  </p>
+
+  <h2 id="prerequisites">Prerequisites</h2>
+  <ul>
+    <li>
+      For Confluence or Jira sources: the Atlassian MCP must be configured in <code>.mcp.json</code>.
+      The skill will call <code>mcp__atlassian__authenticate</code> and prompt you to complete OAuth
+      before fetching. No manual token setup required.
+    </li>
+    <li>
+      For public URLs: no setup — WebFetch runs without credentials.
+    </li>
+    <li>
+      For in-repo files: no setup — the skill reads the file directly from the worktree.
+    </li>
+    <li>
+      For external absolute paths (files outside the repo): the skill copies the file into
+      <code>knowledge/raw/sources/</code> before processing.
+    </li>
+  </ul>
+
+  <h2 id="walkthrough">Walkthrough</h2>
+  <ol>
+    <li>
+      <p><strong>Invoke with a public URL:</strong></p>
+      <pre><code>/kb-ingest https://code.claude.com/docs/en/sub-agents</code></pre>
+      <p>
+        The skill classifies the URL as a public WebFetch source, proposes a slug
+        (<code>anthropic-sub-agents</code>), dated filename, and tag set, then asks "proceed?"
+        before writing anything.
+      </p>
+    </li>
+    <li>
+      <p><strong>Invoke with a Confluence page:</strong></p>
+      <pre><code>/kb-ingest https://confluence.atlassian.linq.com/wiki/spaces/CTO/pages/732856331/The+Forge+Season+2</code></pre>
+      <p>
+        The skill detects the Confluence host via the wiki-entity scan (canonical) or the static
+        fallback table, triggers MCP-mediated auth if needed, and stages a stub-form raw file after
+        you confirm OAuth.
+      </p>
+    </li>
+    <li>
+      <p><strong>Invoke with an in-repo file:</strong></p>
+      <pre><code>/kb-ingest knowledge/raw/sources/my-spec-2026-05-06.md</code></pre>
+      <p>
+        File paths skip the URL-classification scan entirely. The curator processes the file
+        in place — no copy, no network call.
+      </p>
+    </li>
+    <li>
+      <p><strong>Read the response.</strong> After the curator finishes, the skill reports three things to watch for:</p>
+      <ul>
+        <li>Files created or modified — listed by path, including the raw file, the wiki source page, and any new entity or concept pages.</li>
+        <li>Entities and concepts introduced — new entries in <code>knowledge/wiki/entities/</code> and <code>knowledge/wiki/concepts/</code>.</li>
+        <li>Gaps flagged — topics the curator could not resolve from the source alone, with suggested follow-up sources.</li>
+      </ul>
+    </li>
+    <li>
+      <p><strong>Common follow-ups.</strong> Run <code>/kb-lint</code> to confirm the wiki is clean, then <code>git diff</code> and commit. If you ingested a source as part of an incident triage, the
+        <a href={join('/tutorials/incident-triage/')}>incident-triage workflow</a> shows how kb-ingest closes the loop.
+      </p>
+    </li>
+  </ol>
+
+  <Callout variant="self-check" label="Did it work?">
+    <ul>
+      <li>The skill printed a one-paragraph summary of the planned action and asked "proceed?" before writing.</li>
+      <li>After confirmation, it reported at least one new file under <code>knowledge/raw/sources/</code> and one under <code>knowledge/wiki/sources/</code>.</li>
+      <li><code>knowledge/wiki/log.md</code> has a new entry dated today.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="output-shape">Output shape</h2>
+  <p>
+    The skill reports results in plain text rather than a JSON envelope. A successful run looks like
+    this (paths and names are illustrative — actual values depend on the source):
+  </p>
+  <pre><code>{`Files created:
+  knowledge/raw/sources/anthropic-sub-agents-2026-05-06.md
+  knowledge/wiki/sources/anthropic-sub-agents.md
+  knowledge/wiki/entities/claude-code.md  (updated)
+
+Entities introduced: claude-code (updated)
+Concepts introduced: sub-agent-orchestration (new)
+
+Gaps flagged:
+  - "MCP connector scopes" — no source covers this yet.
+    Suggested: https://code.claude.com/docs/en/mcp
+
+Next: run /kb-lint to confirm wiki integrity.`}</code></pre>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <ul>
+    <li><strong>Duplicate slug warning:</strong> The skill runs a pre-flight <code>grep</code> against <code>knowledge/wiki/sources/</code>. If a slug already exists, a new dated capture is created rather than overwriting the existing entry — this is expected behavior.</li>
+    <li><strong>MCP auth prompt does not appear:</strong> Confirm the Atlassian MCP entry is present in <code>.mcp.json</code> and that you are running Claude Code (not Claude Desktop). MCP tools must be listed before the skill can call <code>mcp__atlassian__authenticate</code>.</li>
+    <li><strong>Schema validation failure on curator response:</strong> The skill retries once with the error in context. If it fails a second time, both the raw response and the schema error are surfaced so you can file a bug against the knowledge-curator agent.</li>
+    <li><strong>Tag set looks wrong:</strong> Tags are proposed during pre-flight and require your confirmation before any write. Edit them at the "proceed?" prompt.</li>
+  </ul>
+
+  <h2 id="where-this-fits">Where this fits</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href={join('/how-it-works/')}>How it works — Knowledge base</a> — the three-layer wiki (raw, wiki, SCHEMA) is explained there.</li>
+    <li><strong>Decision:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0013-karpathy-wiki-pattern.md">0013 — Karpathy three-layer wiki pattern</a> (standing decision for the wiki structure)</li>
+    <li><strong>Source:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/kb-ingest/SKILL.md"><code>.claude/skills/kb-ingest/SKILL.md</code></a></li>
+  </ul>
+
+  <h2 id="next">Try the next skill</h2>
+  <p>
+    Once your source is ingested, head to the
+    <a href={join('/tutorials/incident-triage/')}>incident-triage workflow</a> to see how kb-ingest
+    closes the loop at the end of a support investigation — turning a resolved case into durable,
+    retrievable knowledge.
+  </p>
+</ArticleLayout>

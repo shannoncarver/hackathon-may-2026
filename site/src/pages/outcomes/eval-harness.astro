@@ -1,0 +1,120 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="Eval harness — Inspect-AI per-agent and end-to-end"
+  description="Per-agent and e2e tests with a code-quality judge rubric. Inspect-AI framework. Reports land in evals/reports/."
+  eyebrow="Outcome"
+  lede="We shipped a two-layer eval harness—a hand-rolled per-agent runner and an Inspect AI end-to-end suite—that validates schema compliance and grades qualitative output without a managed platform dependency."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Outcomes', href: join('/outcomes/') },
+    { label: 'Eval harness' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li>Decision 0011 defined a two-layer harness: a hand-rolled <code>evals/run.py</code> for per-agent unit evals and an Inspect AI suite under <code>evals/e2e/</code> for end-to-end tool-using coverage.</li>
+      <li>Per-agent cases ship for <code>17-eng-ai</code> and <code>30-docs-generator</code>; a <code>code-quality</code> LLM-as-judge rubric with an Unknown escape hatch scores qualitative output on a 1–5 scale.</li>
+      <li>CI gating on <code>evals/run.py --ci</code> is deferred for the hackathon; schema validation in <code>tests/test_schemas.py</code> runs on every PR and blocks merge on structural failures.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="overview">Overview</h2>
+  <p>
+    Eval coverage for agent systems splits into two concerns: deterministic structure (does the
+    output validate against the agent's JSON schema?) and qualitative judgment (is the reasoning
+    correct, clear, and convention-compliant?). Decision 0011 resolved both with a two-layer
+    design that avoids managed-platform dependencies while producing citable, reference-quality
+    artifacts for the hackathon.
+  </p>
+  <p>
+    The first layer is <code>evals/run.py</code>—approximately 250 lines of Python. It reads
+    JSONL cases from <code>evals/per-agent/&lt;agent&gt;/cases.jsonl</code>, calls the agent
+    (single-turn, no tools) against a pinned model, scores each case with deterministic schema
+    validation and an LLM-as-judge rubric from <code>evals/judges/</code>, and writes a Markdown
+    report to <code>evals/reports/</code>. The runner is intentionally small and readable—it is a
+    teaching artifact, not just a tool.
+  </p>
+  <p>
+    The second layer is an <a href="https://inspect.aisi.org.uk/">Inspect AI</a> suite under
+    <code>evals/e2e/</code>, covering tool-using agents end-to-end with real tool calls. Inspect AI
+    is the framework used by the UK AI Safety Institute, which strengthens the reference posture of
+    the harness. The e2e suite was designated as a follow-up PR in Decision 0011; the directory is
+    scaffolded (a <code>.gitkeep</code> placeholder) and ready to receive test specs.
+  </p>
+  <p>
+    The judge model is pinned at <code>claude-opus-4-7</code>. Output seen by the judge is capped
+    at 2,000 characters to counter verbosity bias. Every rubric includes an Unknown escape hatch:
+    if the judge cannot determine a score, it returns <code>"Unknown"</code> rather than guessing.
+  </p>
+
+  <h2 id="what-we-shipped">What we shipped</h2>
+  <ul>
+    <li>
+      <strong>Decision 0011</strong> — the canonical ADR documenting the two-layer harness design,
+      the hackathon-scope amendment deferring CI gating, and the rationale for Inspect AI over
+      alternatives.
+      (<a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0011-eval-harness-shape.md">docs/decisions/0011&#8209;eval&#8209;harness&#8209;shape.md</a>)
+    </li>
+    <li>
+      <strong><code>evals/run.py</code></strong> — the per-agent runner: JSONL case loader, single-turn
+      agent call with prompt caching, schema validator (Draft 2020-12 via <code>jsonschema</code>),
+      LLM-as-judge scorer, and Markdown report writer.
+      (<a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/run.py">evals/run.py</a>)
+    </li>
+    <li>
+      <strong><code>evals/per-agent/</code></strong> — per-agent JSONL test cases. Cases exist for
+      <code>17-eng-ai</code> (three cases: thin-frontmatter review, skill-vs-agent design question,
+      coordinator schema draft) and <code>30-docs-generator</code> (three cases: MCP README section,
+      brand-voice review, Slack-to-runbook conversion).
+      (<a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/per-agent">evals/per-agent/</a>)
+    </li>
+    <li>
+      <strong><code>evals/e2e/</code></strong> — Inspect AI end-to-end suite directory. Scaffolded
+      with a <code>.gitkeep</code> placeholder; no test specs have landed yet (designated follow-up
+      PR per Decision 0011).
+      (<a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/e2e">evals/e2e/</a>)
+    </li>
+    <li>
+      <strong><code>evals/judges/code-quality.md</code></strong> — the code-quality LLM-as-judge
+      rubric: a 1–5 scale grading clarity, correctness, and adherence to project conventions, with
+      an Unknown escape hatch for cases the judge cannot assess.
+      (<a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/judges/code-quality.md">evals/judges/code-quality.md</a>)
+    </li>
+    <li>
+      <strong><code>evals/reports/</code></strong> — output directory for Markdown run reports named
+      <code>&lt;date&gt;-&lt;run-id&gt;.md</code>. Scaffolded with a <code>.gitkeep</code>;
+      no reports are committed (reports are generated locally on demand).
+      (<a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/reports">evals/reports/</a>)
+    </li>
+  </ul>
+
+  <h2 id="what-we-learned">What we learned</h2>
+  <ul>
+    <li>Separating deterministic schema scoring from LLM-as-judge scoring lets CI run the cheap, reliable check on every PR while deferring the expensive qualitative check to manual or scheduled runs.</li>
+    <li>Capping judge-visible output at 2,000 characters and including an Unknown escape hatch are both necessary—verbosity bias and overconfident scores are real failure modes that the rubric design must anticipate, not patch after the fact.</li>
+    <li>Pinning the judge model (here, <code>claude-opus-4-7</code>) to a specific identifier is a prerequisite for score comparability across runs; bumping the model invalidates historical scores and requires recalibration.</li>
+    <li>The hand-rolled runner at ~250 lines is more legible to new contributors than a framework abstraction would be, which matters for a reference artifact that teaches the pattern as much as it tests it.</li>
+  </ul>
+
+  <h2 id="whats-next">What's next</h2>
+  <ul>
+    <li>Write Inspect AI test specs under <code>evals/e2e/</code> to cover tool-using agents (those with MCP servers or file-write tools) end-to-end with real tool calls.</li>
+    <li>Provision an <code>ANTHROPIC_API_KEY</code> GitHub Actions secret and re-enable <code>evals/run.py --ci</code> gating on PRs — currently deferred because no remote is configured and per-run API cost is unwarranted for the hackathon timeline.</li>
+    <li>Add JSONL cases for the remaining sub-agents as their definitions land; the runner discovers cases by convention (<code>evals/per-agent/&lt;agent&gt;/cases.jsonl</code>), so no runner changes are required.</li>
+    <li>Implement weekly human review of a sampled 20% of judge scores to track divergence between the LLM judge and human raters — Decision 0011 calls for this but it has not started yet.</li>
+  </ul>
+
+  <h2 id="deep-dive">Deep dive</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/pillars/4-agent-definitions.md">Pillar 4 — Agent definitions</a></li>
+    <li><strong>Decision:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0011-eval-harness-shape.md">Decision 0011 — Eval harness: hand-rolled run.py + Inspect AI for e2e</a></li>
+    <li><strong>Source:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/run.py"><code>evals/run.py</code></a>, <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/per-agent"><code>evals/per-agent/</code></a>, <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/evals/judges"><code>evals/judges/</code></a></li>
+  </ul>
+</ArticleLayout>

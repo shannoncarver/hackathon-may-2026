@@ -1,0 +1,220 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="verify-user-authorization"
+  description="Verify whether a user is authorized for a LINQ ERP tenant. Reads DynamoDB directly and mirrors the HarmonyAuthAuthorize endpoint logic."
+  eyebrow="Tutorial"
+  lede="After this page, you will be able to check whether a user is authorized for a LINQ ERP tenant — including the exact status enum and raw DynamoDB records — from the command line."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Tutorials', href: join('/tutorials/') },
+    { label: 'verify-user-authorization' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li><strong>What it does:</strong> Reproduces the LINQ ERP <code>HarmonyAuthAuthorize</code> C# endpoint's decision logic locally, reading <code>erp_users</code> and <code>erp_tenants</code> from DynamoDB and returning a structured authorization envelope.</li>
+      <li><strong>When to reach for it:</strong> A user gets a 401 after Auth0 login, an operator needs to confirm ERP tenant access, or an incident agent needs the raw DynamoDB records as evidence.</li>
+      <li><strong>The one command to know:</strong> <code>python3 skills/verify-user-authorization/scripts/verify_authorization.py --tenant-id acme-isd --user-email alice@example.com --environment dev</code></li>
+    </ul>
+  </Callout>
+
+  <Callout variant="warn" label="Production safety">
+    <p>
+      When running against production, you <strong>must</strong> pass <code>--i-understand-this-is-prod</code>.
+      The script refuses to run without it — there is no shorter alias by design. Before any DynamoDB call,
+      the script prints an audit banner to stderr showing the resolved AWS profile, account ID, ARN, and
+      table names. Check that banner before trusting the results.
+    </p>
+  </Callout>
+
+  <h2 id="when-to-use">When to use this skill</h2>
+  <p>
+    Use verify-user-authorization when you need to answer "is this user authorized for tenant X?"
+    with the same logic the production <code>HarmonyAuthAuthorize</code> C# endpoint uses. The skill
+    reads the <code>erp_users</code> and <code>erp_tenants</code> DynamoDB tables directly and mirrors
+    the endpoint's decision order — including two behaviors that may surprise you: a superuser row
+    that exists but is inactive prevents the user-in-tenant row from being consulted at all, and a
+    missing tenant row does <em>not</em> invalidate authorization (only an inactive tenant does).
+  </p>
+  <p>
+    This skill is <strong>read-only</strong>. It never mutates ERP state. Production runs are
+    supported but require the explicit <code>--i-understand-this-is-prod</code> flag; production
+    CI runs are not supported without a pre-approved, named workflow.
+  </p>
+
+  <h2 id="prerequisites">Prerequisites</h2>
+  <ul>
+    <li>Python 3 with <code>boto3</code> installed (<code>pip install boto3</code>).</li>
+    <li>
+      An AWS SSO session configured. Add the following block to <code>~/.aws/config</code> once,
+      replacing the placeholder account IDs with the real LINQ account IDs from the AWS access portal:
+      <pre><code>{`[sso-session linq]
+sso_start_url = https://linq.awsapps.com/start
+sso_region    = us-east-1
+sso_registration_scopes = sso:account:access
+
+[profile linq-erp-dev]
+sso_session    = linq
+sso_account_id = 111111111111
+sso_role_name  = ERPDevReadOnly
+region         = us-east-1
+
+[profile linq-erp-prod]
+sso_session    = linq
+sso_account_id = 333333333333
+sso_role_name  = ERPProdReadOnly
+region         = us-east-1`}</code></pre>
+    </li>
+    <li>
+      Log in once per day:
+      <pre><code>aws sso login --sso-session linq</code></pre>
+      One login covers all profiles that reference <code>sso-session linq</code>.
+    </li>
+    <li>
+      The skill derives its profile from <code>--environment</code>: <code>linq-erp-dev</code> for
+      dev, <code>linq-erp-prod</code> for prod. Use <code>--aws-profile &lt;name&gt;</code> only for
+      break-glass or incident-response overrides. Pass <code>--aws-profile ''</code> (empty string)
+      to skip named profiles and fall back to boto3's default credential chain (Lambda role, GHA
+      OIDC, instance profile).
+    </li>
+    <li>
+      Optional environment variables: <code>AWS_REGION</code> (default: <code>us-east-1</code>),
+      <code>LINQ_ERP_AWS_PROFILE</code> (workflow-level profile override),
+      <code>LINQ_AWS_USE_AMBIENT_CHAIN=1</code> (skip named-profile resolution),
+      <code>ERP_USERS_TABLE_NAME</code>, <code>ERP_TENANTS_TABLE_NAME</code> (table-name overrides
+      for tests — default values are derived from <code>--environment</code>).
+    </li>
+  </ul>
+
+  <h2 id="walkthrough">Walkthrough</h2>
+  <ol>
+    <li>
+      <p><strong>Invoke against dev (the 99% case):</strong></p>
+      <pre><code>python3 skills/verify-user-authorization/scripts/verify_authorization.py \
+  --tenant-id acme-isd \
+  --user-email alice@example.com \
+  --environment dev</code></pre>
+      <p>
+        Before any DynamoDB call, the script prints an audit banner to stderr with the resolved
+        profile, account ID, ARN, and table names. This is your per-invocation sanity check.
+      </p>
+    </li>
+    <li>
+      <p><strong>Invoke against prod:</strong></p>
+      <pre><code>python3 skills/verify-user-authorization/scripts/verify_authorization.py \
+  --tenant-id acme-isd \
+  --user-email alice@example.com \
+  --environment prod \
+  --i-understand-this-is-prod</code></pre>
+      <p>The script refuses to run without <code>--i-understand-this-is-prod</code> when targeting prod.</p>
+    </li>
+    <li>
+      <p><strong>Read the response.</strong> Three fields to check first:</p>
+      <ul>
+        <li><code>authorization.authorized</code> — <code>true</code> or <code>false</code>.</li>
+        <li><code>authorization.status</code> — the enum that explains <em>why</em> (see the status table in <a href="#output-shape">Output shape</a>).</li>
+        <li><code>matched_user_record</code> — <code>"in_tenant"</code>, <code>"superuser"</code>, or <code>null</code>. When <code>"superuser"</code>, the <code>user</code> field carries the superuser row, not the tenant row.</li>
+      </ul>
+    </li>
+    <li>
+      <p><strong>Common follow-ups.</strong> If the result is <code>TENANT_MISSING_BUT_USER_AUTHORIZED</code>, surface this loudly — it is a real but surprising authorized state per the C# logic. To ingest the investigation findings into the knowledge base, use <a href={join('/tutorials/kb-ingest/')}>kb-ingest</a>.</p>
+    </li>
+  </ol>
+
+  <Callout variant="self-check" label="Did it work?">
+    <ul>
+      <li>An audit banner appeared on stderr before any DynamoDB call, showing profile, account ID, and table names.</li>
+      <li>A JSON envelope appeared on stdout with <code>authorization.authorized</code> set to <code>true</code> or <code>false</code>.</li>
+      <li>The script exited 0 — it always exits 0; the envelope is the only contract.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="output-shape">Output shape</h2>
+  <p>
+    The script writes one JSON object to stdout. Sensitive <code>*_id</code> attributes are redacted
+    by default; pass <code>--include-sensitive</code> only when the operator has explicitly asked
+    for raw values.
+  </p>
+  <pre><code>{`{
+  "authorization": {
+    "authorized": true,
+    "status": "AUTHORIZED_USER",
+    "reason": null
+  },
+  "user": {
+    "PK": "#USRID#alice@example.com",
+    "SK": "#TEN#acme-isd",
+    "status": "active",
+    "db_user_id": "<redacted>"
+  },
+  "tenant": {
+    "PK": "#TEN#acme-isd",
+    "SK": "#TEN#",
+    "status": "active",
+    "db_id": "<redacted>",
+    "connection_string_id": "<redacted>"
+  },
+  "matched_user_record": "in_tenant"
+}`}</code></pre>
+  <p>Status enum values:</p>
+  <ul>
+    <li><strong><code>AUTHORIZED_SUPERUSER</code>:</strong> Active superuser row and active tenant.</li>
+    <li><strong><code>AUTHORIZED_USER</code>:</strong> No superuser row; active user-in-tenant row; active tenant.</li>
+    <li><strong><code>SUPERUSER_DISABLED</code>:</strong> Superuser row exists but is inactive — user-in-tenant not consulted (mirrors C# behavior).</li>
+    <li><strong><code>USER_DISABLED</code>:</strong> No superuser row; user-in-tenant exists but is inactive.</li>
+    <li><strong><code>USER_NOT_FOUND</code>:</strong> Neither user row exists.</li>
+    <li><strong><code>TENANT_DISABLED</code>:</strong> Tenant exists but is inactive; overrides user-side authorization.</li>
+    <li><strong><code>TENANT_MISSING_BUT_USER_AUTHORIZED</code>:</strong> Tenant row absent but user/superuser is active — authorized per C#. Surface this loudly.</li>
+    <li><strong><code>TENANT_MISSING_USER_NOT_AUTHORIZED</code>:</strong> Tenant row absent and user-side decision is also unauthorized.</li>
+    <li><strong><code>ERROR</code>:</strong> AWS credential, network, or input error. See <code>reason</code> for detail.</li>
+  </ul>
+  <p>On unauthorized outcomes, <code>user</code> and <code>tenant</code> are <code>null</code> to avoid leaking partial records.</p>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <ul>
+    <li>
+      <strong><code>Could not resolve AWS identity ... aws sso login --sso-session linq</code>:</strong>
+      Your SSO token has expired or you have never logged in. Run <code>aws sso login --sso-session linq</code> to refresh it.
+    </li>
+    <li>
+      <strong><code>AWS profile 'linq-erp-prod' not found in ~/.aws/config</code>:</strong>
+      Add the <code>[profile linq-erp-prod]</code> block shown in Prerequisites. The error message names the exact stanza to add.
+    </li>
+    <li>
+      <strong><code>AccessDenied: ... is not authorized to perform: dynamodb:GetItem</code>:</strong>
+      Your SSO permission set is missing the required role. Ask Operations to grant
+      <code>ERPDevReadOnly</code> or <code>ERPProdReadOnly</code> for your user.
+    </li>
+    <li>
+      <strong><code>Refusing prod run without --i-understand-this-is-prod</code>:</strong>
+      Add the flag. It confirms explicit prod intent and has no shorter alias by design.
+    </li>
+    <li>
+      <strong>Wrong account ID in the stderr audit banner:</strong>
+      The profile is pointing at the wrong account. Re-check <code>sso_account_id</code> in
+      <code>~/.aws/config</code> for the profile shown in the banner.
+    </li>
+  </ul>
+
+  <h2 id="where-this-fits">Where this fits</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href={join('/how-it-works/')}>Skills management</a></li>
+    <li><strong>Decision:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0016-aws-multi-account-skill-credentials.md">0016 — AWS multi-account skill credentials</a> (named-profile convention, audit banner, prod-acknowledgment rule, and three-phase error model)</li>
+    <li><strong>Source:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/skills/verify-user-authorization/SKILL.md"><code>skills/verify-user-authorization/SKILL.md</code></a></li>
+  </ul>
+
+  <h2 id="next">Try the next skill</h2>
+  <p>
+    After completing an authorization check, use
+    <a href={join('/tutorials/kb-ingest/')}>kb-ingest</a> to add your findings — or any referenced
+    documentation — to the LINQ knowledge base so future agents and engineers can retrieve them
+    without re-running the investigation.
+  </p>
+</ArticleLayout>

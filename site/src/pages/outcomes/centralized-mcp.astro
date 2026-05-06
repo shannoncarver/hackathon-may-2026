@@ -1,0 +1,98 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="Centralized platform MCP design"
+  description="A single internal MCP server fronts LINQ products. IdentityBroker token exchange, audit trail, and drift control across handler teams."
+  eyebrow="Outcome"
+  lede="We designed — and accepted as an ADR — a single, platform-owned MCP server that brokers internal AI agent access to LINQ product data via Auth0 M2M identity, cross-account STS credential exchange, and a versioned handler registry."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Outcomes', href: join('/outcomes/') },
+    { label: 'Centralized MCP' },
+  ]}
+>
+  <Callout variant="warn" label="Status">
+    Decision 0015 is accepted and backed by a five-role architecture review, but the system is not yet deployed. Milestones M1 through M4 are in progress. Claims on this page describe the design, not a running service.
+  </Callout>
+
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li>Decision 0015 establishes a single platform-owned MCP server as the only internal-AI entry point to LINQ product data — Auth0 M2M authentication, a Platform-owned IdentityBroker Lambda for token exchange, and per-product STS AssumeRole for cross-account dispatch.</li>
+      <li>Decision 0008 (per-user OAuth for external SaaS — Atlassian, GitHub) coexists with Decision 0015 and is not superseded by it.</li>
+      <li><code>MCP_VERSION_CHANGELOG.md</code> and <code>.mcp.json</code> provide drift control for the current connector inventory; the centralized server will extend this pattern when it reaches GA.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="overview">Overview</h2>
+  <p>
+    LINQ runs each product in a dedicated AWS account. As internal AI agents increasingly need read access to product data, logs, and internal APIs, the default of one MCP server per product creates sprawl in identity, authorization, governance, AI context scope, and operational ownership. Decision 0015 — accepted 2026-05-04 after a five-role architecture review — establishes a single platform-owned MCP server in the Platform Services account as the only internal-AI entry point, brokering cross-account invocations of product-owned handlers via a versioned handler registry.
+  </p>
+  <p>
+    The pattern is "Auth0-fronted MCP broker with cross-account credential exchange." Agents authenticate via Auth0 M2M (client credentials grant). The MCP server validates tokens, looks up the requested tool in a DynamoDB registry, calls a Platform-owned IdentityBroker Lambda to exchange the agent token for a short-lived, audience-bound JWT that carries the end-user's identity (<code>sub</code>), then invokes the product handler via STS AssumeRole with a per-product External ID. Every invocation produces a single JSON audit record covering agent, user, tool, handler, tenant, outcome, and latency.
+  </p>
+  <p>
+    V1 scope is read-only and internal-only. The MCP server refuses to register handler entries with <code>sideEffects: "write"</code> at the registry level — enforceability is architectural, not policy. Tool catalogs are projected per authenticated principal so no agent receives the full catalog, avoiding token-budget exhaustion as handler count grows. The design targets 40 to 200 handlers at launch and is structured for 5 to 10 times growth over three years without linear cost scaling.
+  </p>
+  <p>
+    Decision 0015 coexists with Decision 0008 — the Atlassian MCP server (per-user OAuth for Confluence and Jira) stays in place. The centralized server applies only to internal LINQ product data. The current <code>.mcp.json</code> reflects this: it registers the Atlassian connector and will add the Platform MCP server entry when the server reaches GA.
+  </p>
+
+  <h2 id="what-we-shipped">What we shipped</h2>
+  <ul>
+    <li>
+      <strong>Decision 0015</strong> — the full architectural ADR: transport choice (HTTP/SSE), identity model (Auth0 M2M + Platform IdentityBroker Lambda, Path C), cross-account invocation (STS AssumeRole with per-product External ID), registry design (DynamoDB + S3 schemas), caching layers, SLOs (99.5% availability, P95 1500 ms for v1), audit record shape, onboarding policy, and a five-milestone implementation plan (M0 pre-requisites through M4 GA). Status: accepted 2026-05-04.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0015-centralized-platform-mcp.md">View on GitHub</a>.
+    </li>
+    <li>
+      <strong>Decision 0008</strong> — per-agent MCP-connector registration pattern: Atlassian MCP pinned in <code>.mcp.json</code>, per-agent scoping via <code>mcpServers:</code> frontmatter, GitHub connector deferred. Provides the drift-control pattern the centralized server will extend.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0008-mcp-connectors.md">View on GitHub</a>.
+    </li>
+    <li>
+      <strong><code>.mcp.json</code></strong> — current connector configuration: Atlassian MCP (<code>https://mcp.atlassian.com/v1/sse</code>), per-user OAuth, no secrets committed.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.mcp.json">View on GitHub</a>.
+    </li>
+    <li>
+      <strong><code>MCP_VERSION_CHANGELOG.md</code></strong> — append-only drift-control log: server name, date, reason, endpoint, and auth model for every connector addition or version bump.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/MCP_VERSION_CHANGELOG.md">View on GitHub</a>.
+    </li>
+    <li>
+      <strong>Architecture review artifacts</strong> — five-role review (architecture, MCP/AI, Security &amp; IAM, Platform, Cost &amp; Reliability), comparison matrix, open-questions log, and implementation plan under <code>docs/research/0015-centralized-platform-mcp/</code>. <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/docs/research/0015-centralized-platform-mcp">View on GitHub</a>.
+    </li>
+    <li>
+      <strong>Wiki synthesis</strong> — six entity pages (MCP authorization, Auth0 M2M, OAuth token exchange, STS + External ID, Lambda resource policy, MCP tool catalog) and one synthesis page (<code>centralized-mcp-broker</code>) in the knowledge base, all ingested to support the architecture review.
+    </li>
+  </ul>
+
+  <h2 id="what-we-learned">What we learned</h2>
+  <ul>
+    <li>Locking v1 to read-only at the registry level — not just by convention — means write semantics can be introduced in v2 with a clean, auditable boundary rather than retrofitted onto an already-live system.</li>
+    <li>Resolving Auth0's RFC 8693 native-grant early-access risk by adopting a Platform-owned KMS-signed JWT (Path C) gave us RFC 8693 wire-shape compatibility today without an early-access production dependency — the swap to native Auth0 RFC 8693 is a single-Lambda change when it leaves early access.</li>
+    <li>Projecting tool catalogs per authenticated principal eliminates context-budget exhaustion as handler count scales, but requires the registry to enforce projection on every <code>tools/list</code> call rather than leaving it to agents.</li>
+    <li>The <code>remote-mcp</code> handler-type escape hatch — reserved now, not built — means federation to product-owned MCP servers is a feature-flag activation in Phase B rather than a re-architecture.</li>
+  </ul>
+
+  <h2 id="whats-next">What's next</h2>
+  <ul>
+    <li><strong>M1 — Core infrastructure:</strong> Lambda + API Gateway HTTP API, DynamoDB registry table with three GSIs, Auth0 M2M application, STS AssumeRole trust policy for one product account. Unblocked as of 2026-05-04.</li>
+    <li><strong>M2 — IdentityBroker and one handler:</strong> Platform KMS-signed JWT exchange, end-to-end proof with one product and one read handler, full audit record validated in the log group.</li>
+    <li><strong>M3 — Multi-product and tool-catalog projection:</strong> Per-authenticated-principal <code>tools/list</code> filtering, onboarding CI checks (schema validation, scope spelling, account-allowlist match).</li>
+    <li><strong>M4 — GA:</strong> SLO instrumentation, provisioned concurrency evaluation, <code>MCP_VERSION_CHANGELOG.md</code> entry for the Platform server, update <code>.mcp.json</code>. Re-evaluate MCP SEPs 1821, 1881, and 1888 for progressive tool discovery (all Draft as of 2026-05-05).</li>
+    <li>Confirm assumptions marked <code>[ASSUMED]</code> in the implementation artifacts: Auth0 entitlement for M2M apps, all four product accounts in one AWS Organization, and the existence of a centralized logging-account OU — unable to verify at this time; each carries a traceable assumption tag in the ADR.</li>
+  </ul>
+
+  <h2 id="deep-dive">Deep dive</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/pillars/6-mcp-connectors.md">Pillar 6 — MCP connector inventory</a></li>
+    <li><strong>Decision 0015 (centralized server):</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0015-centralized-platform-mcp.md">Centralized Platform MCP Server with cross-account dispatch</a></li>
+    <li><strong>Decision 0008 (per-agent registration):</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0008-mcp-connectors.md">MCP connectors — Atlassian (initial), GitHub (follow-up)</a></li>
+    <li><strong>Source — connector config:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.mcp.json"><code>.mcp.json</code></a></li>
+    <li><strong>Source — drift control:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/MCP_VERSION_CHANGELOG.md"><code>MCP_VERSION_CHANGELOG.md</code></a></li>
+    <li><strong>Source — architecture review:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/docs/research/0015-centralized-platform-mcp"><code>docs/research/0015-centralized-platform-mcp/</code></a></li>
+  </ul>
+</ArticleLayout>
