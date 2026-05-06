@@ -4,13 +4,13 @@ date: 2026-05-06
 category: skills-management
 ---
 
-# Decision 0018—Auth0 sec skill: subject-driven security inspection atop the shared auth seam
+# Decision 0020—Auth0 sec skill: subject-driven security inspection atop the shared auth seam
 
 **Status:** Accepted (2026-05-06).
 
 ## Context
 
-The auth0-* skill family now has three lenses on the LINQ sandbox tenant: `/auth0-logs` answers "what events?" (Decision 0014), `/auth0-stats` answers "what aggregate?" (Decision 0017). PR #8's `ha-debug` covers the per-user / per-ticket workflow. The remaining gap is **tenant-wide security inspection**—the questions a security responder asks during incident triage:
+The auth0-* skill family now has three lenses on the LINQ sandbox tenant: `/auth0-logs` answers "what events?" (Decision 0014), `/auth0-stats` answers "what aggregate?" (Decision 0019). PR #8's `ha-debug` covers the per-user / per-ticket workflow. The remaining gap is **tenant-wide security inspection**—the questions a security responder asks during incident triage:
 
 - "Is IP X blocked right now?"
 - "Is user Y locked out?"
@@ -19,7 +19,7 @@ The auth0-* skill family now has three lenses on the LINQ sandbox tenant: `/auth
 
 Every relevant Auth0 Management API endpoint is read-only `GET`—no infrastructure work needed beyond expanding the existing M2M app's scope set.
 
-The Decision 0014 design isolated the auth seam intentionally so siblings could plug in. Decision 0017 was the first sibling and validated the seam. Decision 0018 is the third skill on the same seam, which is the right moment to confirm the pattern is durable before promoting `_auth0_common.py` to a shared location (deferred—see Consequences).
+The Decision 0014 design isolated the auth seam intentionally so siblings could plug in. Decision 0019 was the first sibling and validated the seam. Decision 0020 is the third skill on the same seam, which is the right moment to confirm the pattern is durable before promoting `_auth0_common.py` to a shared location (deferred—see Consequences).
 
 ## Decision
 
@@ -60,7 +60,7 @@ Add `DELETE`/`PATCH` counterparts so the skill is fully operational, not just in
 - **Positive:** Cumulative scope set on the M2M app is now `{read:logs, read:stats, read:anomaly_blocks, read:attack_protection, read:users}`—comprehensive but still all read-only.
 - **Negative:** The IP-block endpoint cannot be live-validated for a *blocked* IP without manufacturing a real attack pattern. The "not blocked" path is verified pre-merge; the "blocked" path is post-merge or post-incident. This is a real coverage gap acknowledged in the test plan.
 - **Negative:** The user-blocks endpoint accepts both `?identifier=<email>` and `/{user_id}` forms, but error handling on a malformed user_id is silent (404 → "not found"). A typo in `auth0|...` looks the same as a real not-found. Acceptable for hackathon scope; a future revision could validate the user_id format before issuing the call.
-- **Operational debt:** Same as Decision 0014 / 0017—when Decision 0015 M4 retires `EnvAuthProvider`, this skill comes along automatically. No additional retirement step needed beyond what Decision 0014 already tracks.
+- **Operational debt:** Same as Decision 0014 / 0019—when Decision 0015 M4 retires `EnvAuthProvider`, this skill comes along automatically. No additional retirement step needed beyond what Decision 0014 already tracks.
 
 ## Sources
 
@@ -71,5 +71,5 @@ Add `DELETE`/`PATCH` counterparts so the skill is fully operational, not just in
 - Auth0 Management API—Suspicious IP throttling settings: https://auth0.com/docs/api/management/v2/attack-protection/get-suspicious-ip-throttling
 - [`knowledge/wiki/entities/auth0-m2m.md`](../../knowledge/wiki/entities/auth0-m2m.md)—Auth0 M2M entity in the LINQ wiki
 - [Decision 0014](0014-auth0-logs-skill.md)—first sibling skill (auth0-logs) with the AuthProvider seam
-- [Decision 0017](0017-auth0-stats-skill.md)—second sibling (auth0-stats); first reuse of the seam
+- [Decision 0019](0019-auth0-stats-skill.md)—second sibling (auth0-stats); first reuse of the seam
 - [Decision 0015](0015-centralized-platform-mcp.md)—centralized platform MCP (target migration)

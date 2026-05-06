@@ -6,7 +6,7 @@ allowed-tools: Read, Glob, Grep, Bash
 
 # auth0-sec skill
 
-Operational how-to for tenant-wide Auth0 security inspection. Where `/auth0-logs` answers "what events?" and `/auth0-stats` answers "what aggregate?", `/auth0-sec` answers "what's our security posture, and is this specific IP / user / policy in good shape?" Read-only across all five endpoints. The standing decision is [Decision 0018](../../../docs/decisions/0018-auth0-sec-skill.md); the script lives at [`scripts/auth0_sec.py`](scripts/auth0_sec.py) and reuses the auth seam from the [`auth0-logs` skill's shared module](../auth0-logs/scripts/_auth0_common.py). Sandbox tenant only.
+Operational how-to for tenant-wide Auth0 security inspection. Where `/auth0-logs` answers "what events?" and `/auth0-stats` answers "what aggregate?", `/auth0-sec` answers "what's our security posture, and is this specific IP / user / policy in good shape?" Read-only across all five endpoints. The standing decision is [Decision 0020](../../../docs/decisions/0020-auth0-sec-skill.md); the script lives at [`scripts/auth0_sec.py`](scripts/auth0_sec.py) and reuses the auth seam from the [`auth0-logs` skill's shared module](../auth0-logs/scripts/_auth0_common.py). Sandbox tenant only.
 
 ## Three-step flow
 
@@ -112,6 +112,6 @@ Per [`.claude/rules/coordination.md`](../../rules/coordination.md):
 - [`scripts/auth0_sec.py`](scripts/auth0_sec.py)—data retrieval script (run with `--help` for CLI reference)
 - [`../auth0-logs/scripts/_auth0_common.py`](../auth0-logs/scripts/_auth0_common.py)—shared auth seam and HTTP idioms
 - [Decision 0014](../../../docs/decisions/0014-auth0-logs-skill.md)—sibling skill standing decision (hybrid approach with swappable AuthProvider)
-- [Decision 0017](../../../docs/decisions/0017-auth0-stats-skill.md)—sibling skill (auth0-stats)
-- [Decision 0018](../../../docs/decisions/0018-auth0-sec-skill.md)—this skill's standing decision
+- [Decision 0019](../../../docs/decisions/0019-auth0-stats-skill.md)—sibling skill (auth0-stats)
+- [Decision 0020](../../../docs/decisions/0020-auth0-sec-skill.md)—this skill's standing decision
 - [Decision 0015](../../../docs/decisions/0015-centralized-platform-mcp.md)—future migration target
