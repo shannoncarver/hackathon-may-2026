@@ -56,7 +56,9 @@ export async function assembleMfaNotEnforcedCase(
   const [enrollment, factors, cognitoMfa, superAdminMfa, appClient, connectionPolicy] = await Promise.allSettled([
     ddb.getMfaEnrollment(lookupId),
     identity.auth0Id ? auth0.getUserFactors(identity.auth0Id) : Promise.resolve([]),
-    cognito.getMfaConfig(),
+    identity.cognitoPoolId
+      ? cognito.getMfaConfig(identity.cognitoPoolId)
+      : Promise.resolve({ mfaStatus: 'USER_NOT_IN_ANY_POOL', softwareTokenEnabled: false, smsMfaEnabled: false }),
     ddb.getSuperAdminMfa(product),
     opts.clientId ? ddb.getAppClient(opts.clientId) : Promise.resolve(undefined),
     opts.connectionId ? auth0.getConnectionMfaPolicy(opts.connectionId) : Promise.resolve(undefined),

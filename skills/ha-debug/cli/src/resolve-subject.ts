@@ -8,6 +8,7 @@ export interface CanonicalSubject {
   cognitoUsername?: string;
   cognitoStatus?: string;
   cognitoEnabled?: boolean;
+  cognitoPoolId?: string;
   auth0Blocked?: boolean;
   resolvedVia: 'auth0' | 'cognito' | 'both' | 'unresolved';
 }
@@ -50,6 +51,7 @@ export async function resolveSubject(
     cognitoUsername: cognitoUser?.username,
     cognitoStatus: cognitoUser?.userStatus,
     cognitoEnabled: cognitoUser?.enabled,
+    cognitoPoolId: cognitoUser?.poolId,
     auth0Blocked,
     resolvedVia,
   };
