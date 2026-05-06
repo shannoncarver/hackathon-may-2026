@@ -50,3 +50,7 @@ Master catalog for the LINQ Hackathon knowledge base. Every wiki page is listed 
 | Page | Tags | Summary |
 |---|---|---|
 | [centralized-mcp-broker](synthesis/centralized-mcp-broker.md) | `mcp`, `auth0`, `aws`, `iam`, `oauth`, `architecture`, `product:cross-cutting` | LINQ-specific composition of MCP authorization, Auth0 M2M, RFC 8693 token exchange, STS + External ID, and Lambda resource policies into the "Auth0-fronted MCP broker with cross-account credential exchange" pattern adopted in [Decision 0015](../../docs/decisions/0015-centralized-platform-mcp.md). Coexists with [Decision 0008](../../docs/decisions/0008-mcp-connectors.md). |
+
+## Cases
+
+_None yet._ See [Decision 0017](../../docs/decisions/0017-case-as-wiki-bucket.md). Cases are written by the Tech Services debugger's `write-resolved-case` subcommand rather than the knowledge-curator.

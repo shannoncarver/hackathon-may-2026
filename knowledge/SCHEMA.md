@@ -12,12 +12,13 @@ The knowledge base has three layers. Each has a different owner and different ru
 | Wiki | `knowledge/wiki/` | Knowledge-curator (primary), other agents on review/lint | LLM-maintained. Agents author and update freely under the SCHEMA. |
 | Schema | `knowledge/SCHEMA.md` (this file) | eng-ai and the user, on architectural change | Versioned via [Decision 0013](../docs/decisions/0013-karpathy-wiki-pattern.md) and successors. |
 
-The wiki has four content-type buckets:
+The wiki has five content-type buckets:
 
 - **`entities/`** — concrete things. A product, a person, a system, a code construct, a third-party tool. One page per real-world thing.
 - **`concepts/`** — abstractions, patterns, principles, frameworks. One page per idea.
 - **`sources/`** — one summary page per ingested source document. Each source page links back to the matching `raw/` file.
 - **`synthesis/`** — cross-cutting analysis that spans multiple sources, entities, or concepts. Use sparingly — synthesis pages exist when there is a load-bearing claim to make that no single source supports alone.
+- **`cases/`** — sanitized resolved debug cases produced by Tech Services debugging tools. One page per symptom-investigation-fix arc. Bucket purpose, frontmatter spec, body structure, and write workflow live in [Decision 0017](../docs/decisions/0017-case-as-wiki-bucket.md).
 
 Two index files at the wiki root:
 
@@ -103,6 +104,26 @@ updated: 2026-05-03
 ---
 ```
 
+### `wiki/cases/<slug>.md`
+
+```yaml
+---
+title: "Force-change-password bulk failure — PasswordResetRequiredException"
+kind: case
+slug: case-2026-05-04-force-change-password-bulk-failure
+tags: ["product:harmony-auth", "debug-case"]
+status: resolved              # one of: open, resolved, superseded
+symptom: "PasswordResetRequiredException for multiple users"
+resolution: "send-password-reset-email"
+sources: ["raw/sources/case-2026-05-04-force-change-password-bulk-failure-2026-05-04.md"]
+related: []
+created: 2026-05-04
+updated: 2026-05-04
+---
+```
+
+Required fields: `title`, `kind`, `slug`, `tags`, `status`, `symptom`, `resolution`, `sources`, `created`, `updated`. Slug format: `case-YYYY-MM-DD-<short-symptom-slug>`. Full bucket spec: [Decision 0017](../docs/decisions/0017-case-as-wiki-bucket.md).
+
 ### `raw/sources/<file>` — stub form (auth-required URLs)
 
 Frontmatter only; a fair-use excerpt may live in the body.
@@ -142,9 +163,9 @@ license_note: "Anthropic public docs — condensed for agent reference; cite sou
 LINQ products are tags, not folders. Use `tags: ["product:<canonical-slug>"]` on every wiki page.
 
 - The initial canonical slug is `product:cross-cutting`. It applies to anything not specific to a single LINQ product (e.g., LINQ-wide concepts, third-party tooling, methodology).
-- A canonical product-slug list will land in a future ADR 0014. Until then, the curator defaults to `product:cross-cutting` and surfaces any other product mention as a `gaps[]` entry asking the user to confirm a slug.
+- The canonical product-slug list lives in [Decision 0016](../docs/decisions/0016-product-slug-canonical-list.md). Initial slugs: `product:cross-cutting`, `product:harmony-auth`. New slugs are added by amending that decision.
 - Multi-product pages get multiple product tags. There is no upper bound.
-- The lint workflow flags any `product:*` tag that is not in the canonical list once 0014 lands.
+- The lint workflow flags any `product:*` tag that is not in the [Decision 0016](../docs/decisions/0016-product-slug-canonical-list.md) canonical list.
 
 ## 5. Ingest workflow
 
@@ -158,6 +179,10 @@ The knowledge-curator owns ingest. Every step is observable.
 6. **Append to `log.md`.** New entry: `## [YYYY-MM-DD] ingest | <Title>` with bullets for `Source:`, `Raw:`, `New entities:`, `New concepts:`, `Curator:`.
 7. **Update `index.md`.** Add or update rows in the relevant bucket sections (Entities, Concepts, Sources, Synthesis).
 8. **Lint pass.** Run the lint workflow (§7) against the just-touched files. Fix any orphans, broken links, or unknown tags before declaring the ingest complete.
+
+### Case write workflow (programmatic)
+
+The `cases/` bucket has its own write path. The Tech Services debugger's `write_resolved_case` function (per [Decision 0018](../docs/decisions/0018-ts-debugger-architecture.md)) mirrors the steps above without invoking the `/kb-ingest` skill — cases are first-party artifacts rather than ingested external sources. Full case-write workflow: [Decision 0017](../docs/decisions/0017-case-as-wiki-bucket.md).
 
 ## 6. Query workflow
 
@@ -179,17 +204,19 @@ Checks:
 - **Stale claims.** Any wiki page where `updated:` is older than 90 days. Stale is not wrong — but a fresh ingest should re-confirm it.
 - **Contradictions.** Pages with overlapping tag sets that make incompatible claims about the same entity. Surface for human review.
 - **Bidirectional drift.** A source page's `entities:` array lists `wiki/entities/foo.md`, but `foo.md`'s `sources:` array does not list the source page (or vice versa).
-- **Unknown product tags.** Any `product:*` tag not in the canonical list (once Decision 0014 lands).
+- **Unknown product tags.** Any `product:*` tag not in the [Decision 0016](../docs/decisions/0016-product-slug-canonical-list.md) canonical list.
 - **Frontmatter completeness.** Required fields per §2 are present and non-empty.
+- **Case-specific.** For pages with `kind: case`: `status:` is one of `open`, `resolved`, `superseded`; an `open` case older than 30 days is flagged; `tags:` contains at least one `product:*` tag from the canonical list; `sources:` resolves to an existing `raw/sources/<file>.md`.
 
 ## 8. Operations table
 
 | Operation | Reads | Writes | Must NOT touch |
 |---|---|---|---|
-| Ingest | source URL or document; existing wiki pages | `raw/sources/`, `wiki/sources/`, `wiki/entities/`, `wiki/concepts/`, `wiki/log.md`, `wiki/index.md` | Existing `raw/` files (immutable); `synthesis/` (rarely touched on ingest) |
+| Ingest | source URL or document; existing wiki pages | `raw/sources/`, `wiki/sources/`, `wiki/entities/`, `wiki/concepts/`, `wiki/log.md`, `wiki/index.md` | Existing `raw/` files (immutable); `synthesis/` (rarely touched on ingest); `cases/` (written by debugger tools, not the curator) |
 | Query | `wiki/index.md`, relevant `wiki/<bucket>/<slug>.md`, `raw/sources/<file>` for verbatim | nothing | All of `knowledge/`. Query is read-only. |
 | Lint | every wiki and raw file | `wiki/log.md` (one entry summarizing the lint result) | `raw/sources/` (immutable); other agents' artifacts |
 | Synthesis | multiple `wiki/sources/`, `wiki/entities/`, `wiki/concepts/` | `wiki/synthesis/<slug>.md`, `wiki/log.md`, `wiki/index.md` | Existing entity or concept pages — synthesis builds *on* them, not over them |
+| Case write | structured caseFile from a Tech Services debugger tool | `raw/sources/case-*-YYYY-MM-DD.md`, `wiki/cases/<slug>.md`, `wiki/log.md`, `wiki/index.md` | Existing `raw/` files (immutable); other agents' artifacts |
 
 ## 9. Trust boundary
 
