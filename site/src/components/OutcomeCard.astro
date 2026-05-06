@@ -1,0 +1,115 @@
+---
+interface Props {
+  href: string;
+  pillar?: string;
+  status?: 'shipped' | 'in-progress' | 'future';
+  title: string;
+  summary: string;
+}
+
+const { href, pillar, status = 'shipped', title, summary } = Astro.props;
+const statusLabel = {
+  shipped: 'Shipped',
+  'in-progress': 'In progress',
+  future: 'Future',
+}[status];
+---
+
+<a href={href} class="outcome-card" data-status={status}>
+  <div class="oc-meta">
+    {pillar && <span class="oc-pillar">{pillar}</span>}
+    <span class={`oc-status oc-status--${status}`}>{statusLabel}</span>
+  </div>
+  <h3 class="oc-title">{title}</h3>
+  <p class="oc-summary">{summary}</p>
+  <span class="oc-cta">Read outcome →</span>
+</a>
+
+<style>
+  .outcome-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    height: 100%;
+  }
+
+  .outcome-card:hover, .outcome-card:focus-visible {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 138, 156, 0.10);
+    text-decoration: none;
+  }
+
+  .oc-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .oc-pillar {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  .oc-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .oc-status--shipped {
+    background: #ecfdf5;
+    color: #065f46;
+  }
+  .oc-status--in-progress {
+    background: var(--color-warn-bg);
+    color: #92400e;
+  }
+  .oc-status--future {
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+  }
+
+  .oc-title {
+    font-size: 19px;
+    line-height: 1.3;
+    font-weight: 700;
+    margin: 4px 0 0;
+    color: var(--color-text);
+  }
+
+  .oc-summary {
+    font-size: 15px;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .oc-cta {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-top: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .outcome-card:hover, .outcome-card:focus-visible {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+</style>

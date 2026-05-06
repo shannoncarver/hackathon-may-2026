@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+---
+
+<BaseLayout title="Not found">
+  <div class="container wide">
+    <Hero
+      eyebrow="404"
+      title="That page is not here."
+      lede="Either it has not been authored yet, or the link is wrong. Try the navigation above, or head back to the homepage."
+    >
+      <p><a href={baseUrl}>Back to home →</a></p>
+    </Hero>
+  </div>
+</BaseLayout>

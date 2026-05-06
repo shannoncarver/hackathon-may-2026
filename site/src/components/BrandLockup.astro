@@ -1,0 +1,63 @@
+---
+interface Props {
+  product?: string;
+  href?: string;
+}
+
+const { product = 'Hackathon · May 2026', href } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+const homeHref = href ?? baseUrl;
+---
+
+<a href={homeHref} class="brand" aria-label="LINQ Hackathon home">
+  <svg class="brand-flame" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path fill="#f97316" d="M16 2c-.9 2.6-1.5 5-2.1 7.4-.4 1.8 0 3.2.9 4.1-.4-2.9.6-5.4 1.8-7.8 1.4 2.5 3.2 4.6 3.2 7.7 0 2.5-1.7 4.5-3.8 4.5s-3.8-2-3.8-4.5c0-1.3.3-2.6.9-3.6-1.4 1.8-2.1 3.9-2.1 5.9 0 3.6 2.6 6.3 6 6.3s6.1-2.7 6.1-6.3c0-4.2-3.2-7.8-7.1-13.7z"/>
+    <path fill="#fb923c" d="M15.3 14.4c-1.2 1.1-1.8 2.6-1.8 4.1 0 1.9 1.3 3.2 3.2 3.2 1.8 0 3.3-1.4 3.3-3.2 0-1-.4-1.9-1-2.7-.2 1.3-1.2 2.1-2.2 2.1-1 0-1.8-.8-1.5-3.5z"/>
+  </svg>
+  <span class="brand-wordmark">LINQ</span>
+  <span class="brand-divider" aria-hidden="true"></span>
+  <span class="brand-product">{product}</span>
+</a>
+
+<style>
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--color-on-dark);
+    font-size: 15px;
+  }
+  .brand:hover { text-decoration: none; }
+
+  .brand-flame {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .brand-wordmark {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    font-size: 20px;
+    color: var(--color-on-dark);
+  }
+
+  .brand-divider {
+    width: 1px;
+    height: 22px;
+    background: var(--color-on-dark-divider);
+    margin: 0 6px;
+  }
+
+  .brand-product {
+    font-weight: 500;
+    color: var(--color-on-dark-muted);
+    font-size: 14px;
+    letter-spacing: 0.01em;
+  }
+
+  @media (max-width: 640px) {
+    .brand-divider, .brand-product { display: none; }
+  }
+</style>

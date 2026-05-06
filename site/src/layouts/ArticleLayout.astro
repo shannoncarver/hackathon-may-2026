@@ -1,0 +1,68 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  lede?: string;
+  breadcrumb?: { label: string; href?: string }[];
+}
+
+const { title, description, eyebrow, lede, breadcrumb } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} breadcrumb={breadcrumb}>
+  <article class="container">
+    <header class="article-header">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      <h1>{title}</h1>
+      {lede && <p class="lede">{lede}</p>}
+    </header>
+    <div class="article-body">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .article-header {
+    padding: 56px 0 36px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 40px;
+  }
+
+  .article-header .eyebrow {
+    margin: 0 0 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .article-header h1 {
+    margin: 0 0 18px;
+    font-size: 40px;
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--color-text);
+  }
+
+  .article-header .lede {
+    font-size: 19px;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.55;
+    max-width: 700px;
+  }
+
+  .article-body :global(strong) { color: var(--color-text); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .article-header { padding: 36px 0 24px; margin-bottom: 28px; }
+    .article-header h1 { font-size: 32px; }
+    .article-header .lede { font-size: 17px; }
+  }
+</style>

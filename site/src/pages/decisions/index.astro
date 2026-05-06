@@ -1,0 +1,51 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import DocList from '../../components/DocList.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+
+const repoDocsBase = 'https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/';
+
+// In Milestone 3 these will be pulled at build time from docs/decisions/*.md.
+// For Milestone 1 we list them inline so the page is reachable.
+const decisions = [
+  { n: '0001', slug: 'specialist-location',                     title: 'Specialist location',                   summary: 'Sub-agents live in `.claude/agents/<name>.md`; Claude Code auto-discovers; no custom dispatcher.' },
+  { n: '0002', slug: 'coordinator-placement',                   title: 'Coordinator placement',                 summary: 'Primary coordinator is the main Claude Code session; sub-agents are not nested.' },
+  { n: '0003', slug: 'no-plugin-packaging',                     title: 'No plugin packaging',                   summary: 'Claude Code native; avoid plugin wrappers for deployment simplicity.' },
+  { n: '0004', slug: 'knowledge-base-shape',                    title: 'Knowledge base shape (superseded)',     summary: 'Early two-folder sketch; superseded by 0013.' },
+  { n: '0005', slug: 'trust-boundary',                          title: 'Trust boundary',                        summary: 'Specialist outputs and user content are untrusted; validation and wrapping rules.' },
+  { n: '0006', slug: 'claude-code-native',                      title: 'Claude Code native',                    summary: 'Build on Claude Code primitives; no custom orchestration framework.' },
+  { n: '0007', slug: 'custom-output-style',                     title: 'Custom output style',                   summary: '`.claude/output-styles/demo.md` for stakeholder-facing format.' },
+  { n: '0008', slug: 'mcp-connectors',                          title: 'MCP connectors',                        summary: 'Atlassian MCP for Confluence/Jira; Anthropic registry for others; explicit per-agent registration.' },
+  { n: '0009', slug: 'pr-review-flow',                          title: 'PR review flow',                        summary: 'Manual PR review before merge; specialist input on domain-specific PRs.' },
+  { n: '0010', slug: 'reference-quality-posture',               title: 'Reference quality posture',             summary: 'Thorough documentation over lightweight; auditable provenance, deterministic ops.' },
+  { n: '0011', slug: 'eval-harness-shape',                      title: 'Eval harness shape',                    summary: 'Inspect-AI framework; per-agent + e2e tests; code-quality judge rubric.' },
+  { n: '0012', slug: 'rename-architecture-to-decisions',        title: 'Rename architecture to decisions',      summary: 'Rename `docs/architecture/` to `docs/decisions/` for clarity.' },
+  { n: '0013', slug: 'karpathy-wiki-pattern',                   title: 'Karpathy three-layer wiki',             summary: 'Three-layer LLM-wiki: raw, wiki, SCHEMA. Supersedes 0004.' },
+  { n: '0014', slug: 'auth0-logs-skill',                        title: 'Auth0 logs skill',                      summary: 'Skill for querying Auth0 Management API logs; LINQ sandbox tenant only.' },
+  { n: '0015', slug: 'centralized-platform-mcp',                title: 'Centralized platform MCP',              summary: 'Single internal MCP server for LINQ products; Lambda + API Gateway.' },
+  { n: '0016', slug: 'aws-multi-account-skill-credentials',     title: 'AWS multi-account skill credentials',   summary: 'Named profiles, env-derived defaults, prod-acknowledgment guard, sts audit banner.' },
+];
+
+const items = decisions.map((d) => ({
+  href: `${repoDocsBase}${d.n}-${d.slug}.md`,
+  title: `${d.n} — ${d.title}`,
+  path: `docs/decisions/${d.n}-${d.slug}.md`,
+  description: d.summary,
+}));
+---
+
+<ArticleLayout
+  title="Decisions"
+  eyebrow="Architecture decision records"
+  lede="Sixteen decisions captured during the hackathon — each links to its source markdown. Filtering by status and category lands in v2."
+  breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'Decisions' }]}
+>
+  <Callout variant="info" label="Source of truth">
+    <p>Decision records live in <code>docs/decisions/</code>. Pages here will be generated from those source files at build time in Milestone 3; the v1 list links straight to the canonical markdown on GitHub.</p>
+  </Callout>
+
+  <DocList items={items} />
+</ArticleLayout>

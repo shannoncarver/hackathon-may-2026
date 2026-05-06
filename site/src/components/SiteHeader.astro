@@ -1,0 +1,127 @@
+---
+import BrandLockup from './BrandLockup.astro';
+
+interface NavItem { label: string; href: string; }
+
+interface Props {
+  breadcrumb?: { label: string; href?: string }[];
+}
+
+const { breadcrumb } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+
+const nav: NavItem[] = [
+  { label: 'Home',         href: join('/') },
+  { label: 'Outcomes',     href: join('/outcomes/') },
+  { label: 'How it works', href: join('/how-it-works/') },
+  { label: 'Decisions',    href: join('/decisions/') },
+  { label: 'Demo',         href: join('/demo/') },
+  { label: 'About',        href: join('/about/') },
+];
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '');
+const isActive = (href: string) => {
+  const target = href.replace(/\/$/, '');
+  if (target === baseUrl.replace(/\/$/, '')) return currentPath === target;
+  return currentPath.startsWith(target);
+};
+---
+
+<header class="site-header">
+  <div class="container wide header-row">
+    <BrandLockup />
+    <nav class="primary-nav" aria-label="Primary">
+      <ul>
+        {nav.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class={isActive(item.href) ? 'is-active' : ''}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    {breadcrumb && (
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        {breadcrumb.map((b, i) => (
+          <span>
+            {b.href ? <a href={b.href}>{b.label}</a> : <span>{b.label}</span>}
+            {i < breadcrumb.length - 1 && <span class="sep" aria-hidden="true"> / </span>}
+          </span>
+        ))}
+      </nav>
+    )}
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background: var(--color-brand-dark);
+    color: var(--color-on-dark);
+    padding: 12px 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .primary-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .primary-nav a {
+    color: var(--color-on-dark-muted);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .primary-nav a:hover {
+    color: var(--color-on-dark);
+    background: rgba(255, 255, 255, 0.08);
+    text-decoration: none;
+  }
+
+  .primary-nav a.is-active {
+    color: var(--color-on-dark);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .breadcrumb {
+    font-size: 13px;
+    color: var(--color-on-dark-subtle);
+  }
+  .breadcrumb a {
+    color: var(--color-on-dark-muted);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover {
+    color: var(--color-on-dark);
+    text-decoration: none;
+  }
+  .breadcrumb .sep { margin: 0 4px; }
+
+  @media (max-width: 640px) {
+    .primary-nav ul { gap: 2px; }
+    .primary-nav a { padding: 4px 8px; font-size: 13px; }
+  }
+</style>

@@ -1,0 +1,57 @@
+---
+interface Props {
+  variant?: 'info' | 'warn' | 'self-check';
+  label?: string;
+}
+
+const { variant = 'info', label } = Astro.props;
+const defaultLabels: Record<string, string> = {
+  info: 'Note',
+  warn: 'Heads up',
+  'self-check': 'Self-check',
+};
+const finalLabel = label ?? defaultLabels[variant];
+---
+
+<aside class={`callout ${variant}`}>
+  {finalLabel && <span class="callout-label">{finalLabel}</span>}
+  <div class="callout-body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+  .callout {
+    background: var(--color-callout-bg);
+    border-left: 4px solid var(--color-callout-border);
+    padding: 14px 20px;
+    border-radius: var(--radius-sm);
+    margin: 20px 0;
+    font-size: 15.5px;
+  }
+
+  .callout.warn {
+    background: var(--color-warn-bg);
+    border-left-color: var(--color-warn-border);
+  }
+
+  .callout.self-check {
+    background: var(--color-selfcheck-bg);
+    border-left-color: var(--color-selfcheck-border);
+  }
+
+  .callout :global(p:last-child) { margin-bottom: 0; }
+
+  .callout-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .callout.warn .callout-label { color: #b45309; }
+  .callout.self-check .callout-label { color: #065f46; }
+</style>

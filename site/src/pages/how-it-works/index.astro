@@ -1,0 +1,30 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import DocList from '../../components/DocList.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+
+const pillars = [
+  { href: join('/how-it-works/knowledge/'), title: 'Pillar 1 — Knowledge base',         path: 'docs/pillars/1-knowledge-base.md',  description: 'Three-layer LLM-wiki: raw sources, LLM-curated wiki, schema spec.' },
+  { href: join('/how-it-works/repo/'),      title: 'Pillar 2 — Repo structure',          path: 'docs/pillars/2-repo-structure.md',   description: 'Directory layout, naming, and organization that scales with new agents and connectors.' },
+  { href: join('/how-it-works/docs/'),      title: 'Pillar 3 — Documentation',           path: 'docs/pillars/3-documentation.md',    description: 'Tracks for developers, agents, and stakeholders evaluating the demo.' },
+  { href: join('/how-it-works/agents/'),    title: 'Pillar 4 — Agent definitions',       path: 'docs/pillars/4-agent-definitions.md', description: 'Qualifications, system prompts, allowed tools, JSON-schema I/O contracts.' },
+  { href: join('/how-it-works/skills/'),    title: 'Pillar 5 — Skills management',       path: 'docs/pillars/5-skills-management.md', description: 'How skills are authored, versioned, discovered, and assigned to agents.' },
+  { href: join('/how-it-works/mcp/'),       title: 'Pillar 6 — MCP connector inventory', path: 'docs/pillars/6-mcp-connectors.md',   description: 'Which connectors each agent needs and how credentials are managed.' },
+];
+---
+
+<ArticleLayout
+  title="How it works"
+  eyebrow="Architecture"
+  lede="The system is built around six pillars. Most tasks map to one of them — when starting work, identify which pillar applies."
+  breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'How it works' }]}
+>
+  <Callout variant="info" label="Status">
+    <p>Pillar deep-dive pages are scaffolded; full content lands in Milestones 2–3.</p>
+  </Callout>
+
+  <DocList items={pillars} />
+</ArticleLayout>

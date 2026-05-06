@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import PersonaPivot from '../components/PersonaPivot.astro';
+import PersonaBand from '../components/PersonaBand.astro';
+import OutcomeCard from '../components/OutcomeCard.astro';
+import PrimaryCard from '../components/PrimaryCard.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+
+// Placeholder outcome stubs — Milestone 1 ships structure; Milestone 2+ fills these in.
+const outcomeStubs = [
+  {
+    href: join('/outcomes/knowledge-wiki/'),
+    pillar: 'Knowledge base',
+    title: 'Three-layer LLM-wiki for project knowledge',
+    summary: 'Karpathy-style raw / wiki / SCHEMA pattern. Immutable sources, LLM-curated synthesis, audit-friendly provenance.',
+  },
+  {
+    href: join('/outcomes/agent-roster/'),
+    pillar: 'Agent definitions',
+    title: 'Coordinator + nine specialist sub-agents',
+    summary: 'A primary coordinator routes work to nine domain specialists with versioned JSON-schema I/O contracts.',
+  },
+  {
+    href: join('/outcomes/centralized-mcp/'),
+    pillar: 'MCP connectors',
+    title: 'Centralized platform MCP design',
+    summary: 'A single internal MCP server fronts LINQ products. IdentityBroker token exchange, audit trail, drift control.',
+  },
+];
+---
+
+<BaseLayout title="Home">
+  <div class="container wide">
+    <Hero
+      eyebrow="The Forge · Season 2"
+      title="LINQ Hackathon — Every Minute Matters"
+      lede="A coordinator-and-specialists Claude Code system that routes engineering, product, documentation, and knowledge-management work to versioned sub-agents. This site captures what we built, what we learned, and what's next."
+    >
+      <PersonaPivot />
+    </Hero>
+
+    <section class="featured" aria-labelledby="featured-title">
+      <h2 id="featured-title">Featured outcomes</h2>
+      <p class="muted">A few of the threads worth pulling first. Full list lives under <a href={join('/outcomes/')}>Outcomes</a>.</p>
+      <div class="outcome-grid">
+        {outcomeStubs.map((o) => (
+          <OutcomeCard href={o.href} pillar={o.pillar} status="shipped" title={o.title} summary={o.summary} />
+        ))}
+      </div>
+    </section>
+  </div>
+
+  <PersonaBand
+    id="exec"
+    eyebrow="Path · Executive"
+    title="If you have 60 seconds"
+    description="What we built, what came of it, and what we'd productionize. No code, no jargon."
+    goDeeperHref={join('/outcomes/')}
+    goDeeperLabel="See all outcomes"
+  >
+    {outcomeStubs.map((o) => (
+      <OutcomeCard href={o.href} pillar={o.pillar} status="shipped" title={o.title} summary={o.summary} />
+    ))}
+  </PersonaBand>
+
+  <PersonaBand
+    id="pm"
+    eyebrow="Path · Product"
+    title="Use cases and what shipped"
+    description="The user journeys we proved out, the artifacts we left behind, and the things worth productionizing next."
+    goDeeperHref={join('/how-it-works/')}
+    goDeeperLabel="How it works"
+  >
+    {outcomeStubs.map((o) => (
+      <OutcomeCard href={o.href} pillar={o.pillar} status="shipped" title={o.title} summary={o.summary} />
+    ))}
+  </PersonaBand>
+
+  <PersonaBand
+    id="builder"
+    eyebrow="Path · Engineering"
+    title="Architecture, decisions, and code"
+    description="Sub-agent definitions, JSON-schema I/O contracts, MCP wiring, evals, and the 16 architecture-decision records that explain how we got here."
+    goDeeperHref={join('/decisions/')}
+    goDeeperLabel="Browse decisions"
+  >
+    <PrimaryCard
+      href={join('/how-it-works/')}
+      label="Architecture"
+      title="How the coordinator routes work"
+      description="Walk the six pillars — knowledge base, repo structure, documentation, agent definitions, skills management, and MCP connectors."
+      cta="Open architecture →"
+    />
+  </PersonaBand>
+
+  <PersonaBand
+    id="curious"
+    eyebrow="Path · Curious"
+    title="What is this and why?"
+    description="A LINQ-internal hackathon entry exploring whether a coordinator-plus-specialists Claude Code setup is a force multiplier across engineering, product, support, and knowledge management."
+    goDeeperHref={join('/about/')}
+    goDeeperLabel="About this project"
+  >
+    <PrimaryCard
+      href={join('/about/')}
+      label="About"
+      title="The Forge: Season 2 — Every Minute Matters"
+      description="What we set out to prove, who built it, and how this repository is organized."
+      cta="Read about →"
+    />
+  </PersonaBand>
+</BaseLayout>
+
+<style>
+  .featured { padding: 16px 0 8px; }
+  .featured h2 { margin-top: 24px; }
+  .featured .muted { color: var(--color-text-muted); margin: 0 0 24px; }
+  .outcome-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+</style>
