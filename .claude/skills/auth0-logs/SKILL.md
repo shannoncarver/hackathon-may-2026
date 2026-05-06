@@ -1,6 +1,6 @@
 ---
 name: auth0-logs
-description: Operational protocol for querying Auth0 Management API logs by natural-language prompt. Use when running the /auth0-logs slash command, when a user says "show me failed logins", "auth0 logs", "authentication failures", "who got locked out", or when investigating auth-related incidents on the LINQ sandbox tenant.
+description: Operational protocol for querying Auth0 Management API logs by natural-language prompt. Use when running the /auth0-logs slash command, when a user says "show me failed logins", "auth0 logs", "authentication failures", "who got locked out", "verify user can authenticate", "can this user authenticate with auth0", "check auth0 authentication for [user]", "verify auth0 setup for [user or app client]", or when investigating auth-related incidents or verifying authentication activity for a user, app client, or connection on the LINQ sandbox tenant.
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
