@@ -1,0 +1,33 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="Demo"
+  eyebrow="Five-to-seven minutes"
+  lede="The demo arc the hackathon coordinator will record. Embed lands when the recording is final."
+  breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'Demo' }]}
+>
+  <Callout variant="info" label="Status">
+    <p>Recording pending. The story arc below is held authoritative by <code>docs/stakeholder/demo-narrative.md</code> — when the cut is final, the embed slots in here.</p>
+  </Callout>
+
+  <h2>Story arc</h2>
+  <ol>
+    <li><strong>Hook</strong> — A LINQ employee starts a typical day with cross-functional asks (engineering review, product spec, doc update, knowledge lookup).</li>
+    <li><strong>Without the system</strong> — They context-switch across many tools, manually ferry information, and lose minutes per task.</li>
+    <li><strong>With the system</strong> — They open Claude Code, type a single high-level request. The coordinator routes work to specialists, returns a synthesized result with citations and next steps.</li>
+    <li><strong>The reveal</strong> — JSON-schema validation, the trace log, the eval harness running in CI. This is a versioned, audited, evaluated multi-agent system that any LINQ team can fork.</li>
+  </ol>
+
+  <h2>What we explicitly do not show</h2>
+  <ul>
+    <li>Live MCP calls to production Confluence / Jira (auth complications during a demo).</li>
+    <li>Edge-case failures (this is a demo, not a debugging session).</li>
+    <li>Anything that would invent a LINQ metric we cannot verify.</li>
+  </ul>
+</ArticleLayout>

@@ -1,0 +1,56 @@
+/* Design tokens — lifted from LINQ-Labs/src-service-poc/docs/training/assets/styles.css.
+ * Spec: /docs/site-plan/design-tokens.md
+ *
+ *   - Dark teal sidebar/header
+ *   - LINQ teal primary accent
+ *   - Orange flame reserved for the logo mark
+ *   - White cards on soft off-white, subtle borders, minimal shadow
+ */
+
+:root {
+  /* Brand */
+  --color-brand-dark:        #134e5a;
+  --color-brand-dark-hover:  #1f6a7b;
+  --color-primary:           #0f8a9c;
+  --color-primary-hover:     #0b6d7e;
+  --color-primary-tint:      #e0f2f4;
+  --color-accent-flame:      #f97316;
+  --color-accent-flame-hi:   #fb923c;
+
+  /* On-dark foregrounds */
+  --color-on-dark:           #ffffff;
+  --color-on-dark-muted:     rgba(255, 255, 255, 0.78);
+  --color-on-dark-subtle:    rgba(255, 255, 255, 0.55);
+  --color-on-dark-divider:   rgba(255, 255, 255, 0.18);
+
+  /* Neutrals */
+  --color-bg:                #f7f8fa;
+  --color-surface:           #ffffff;
+  --color-surface-alt:       #f1f5f9;
+  --color-text:              #0f172a;
+  --color-text-muted:        #475569;
+  --color-text-subtle:       #94a3b8;
+  --color-border:            #e2e8f0;
+  --color-border-strong:     #cbd5e1;
+  --color-code-bg:           #f1f5f9;
+  --color-code-border:       #e2e8f0;
+
+  /* Callouts */
+  --color-callout-bg:        var(--color-primary-tint);
+  --color-callout-border:    var(--color-primary);
+  --color-warn-bg:           #fef3c7;
+  --color-warn-border:       #f59e0b;
+  --color-selfcheck-bg:      #ecfdf5;
+  --color-selfcheck-border:  #10b981;
+
+  /* Typography */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Layout */
+  --maxw-reading: 820px;
+  --maxw-wide:    1200px;
+  --radius-sm:    6px;
+  --radius:       8px;
+  --radius-lg:    12px;
+}

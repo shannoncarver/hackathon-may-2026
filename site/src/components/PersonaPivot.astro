@@ -1,0 +1,101 @@
+---
+interface Persona {
+  id: string;
+  label: string;
+  pitch: string;
+}
+
+const personas: Persona[] = [
+  { id: 'exec',     label: "I'm an exec",      pitch: '60-second skim — outcomes, ROI signals, what to productionize.' },
+  { id: 'pm',       label: "I'm a PM",         pitch: 'Use cases, what shipped, what to productionize next.' },
+  { id: 'builder',  label: "I'm a builder",    pitch: 'Architecture, decisions, agents, prompts, evals.' },
+  { id: 'curious',  label: "I'm just curious", pitch: 'What is this and why does it exist.' },
+];
+---
+
+<nav class="persona-pivot" aria-label="Choose your path">
+  <p class="persona-prompt">Pick the path that fits you. Each one routes to the same underlying material at a different depth.</p>
+  <ul role="list">
+    {personas.map((p) => (
+      <li>
+        <a href={`#${p.id}`} class="persona-pill" data-persona={p.id}>
+          <span class="persona-label">{p.label}</span>
+          <span class="persona-pitch">{p.pitch}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .persona-pivot {
+    margin: 24px 0 12px;
+  }
+
+  .persona-prompt {
+    color: var(--color-text-muted);
+    margin: 0 0 16px;
+    font-size: 16px;
+  }
+
+  .persona-pivot ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .persona-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .persona-pill:hover, .persona-pill:focus-visible {
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 138, 156, 0.12);
+    text-decoration: none;
+  }
+
+  .persona-label {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-text);
+  }
+
+  .persona-pitch {
+    font-size: 13.5px;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .persona-pill:hover, .persona-pill:focus-visible {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+</style>
+
+<script>
+  // Keyboard cycling: arrow keys move focus between persona pills.
+  const pills = document.querySelectorAll<HTMLAnchorElement>('.persona-pill');
+  pills.forEach((pill, i) => {
+    pill.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const next = e.key === 'ArrowRight' ? (i + 1) % pills.length : (i - 1 + pills.length) % pills.length;
+      pills[next].focus();
+    });
+  });
+</script>

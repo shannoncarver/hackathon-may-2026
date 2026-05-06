@@ -1,0 +1,85 @@
+---
+interface Props {
+  href: string;
+  label: string;
+  title: string;
+  description: string;
+  cta?: string;
+}
+
+const { href, label, title, description, cta = 'Read more →' } = Astro.props;
+---
+
+<a href={href} class="primary-card">
+  <div class="pc-text">
+    <div class="pc-label">{label}</div>
+    <h2 class="pc-title">{title}</h2>
+    <p class="pc-desc">{description}</p>
+  </div>
+  <span class="pc-cta">{cta}</span>
+</a>
+
+<style>
+  .primary-card {
+    background: var(--color-brand-dark);
+    color: var(--color-on-dark);
+    border-radius: var(--radius-lg);
+    padding: 32px 36px;
+    margin: 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .primary-card:hover {
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(19, 78, 90, 0.25);
+  }
+
+  .pc-text { flex: 1; min-width: 240px; }
+
+  .pc-label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-primary-tint);
+    margin-bottom: 8px;
+  }
+
+  .pc-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--color-on-dark);
+    margin: 0 0 10px;
+    line-height: 1.2;
+  }
+
+  .pc-desc {
+    color: var(--color-on-dark-muted);
+    font-size: 16px;
+    margin: 0;
+    line-height: 1.55;
+    max-width: 560px;
+  }
+
+  .pc-cta {
+    background: var(--color-accent-flame);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: var(--radius);
+    font-weight: 700;
+    font-size: 15px;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .primary-card:hover { transform: none; box-shadow: none; }
+  }
+</style>

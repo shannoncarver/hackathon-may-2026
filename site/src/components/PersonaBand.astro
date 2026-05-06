@@ -1,0 +1,78 @@
+---
+interface Props {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  goDeeperHref: string;
+  goDeeperLabel: string;
+}
+
+const { id, eyebrow, title, description, goDeeperHref, goDeeperLabel } = Astro.props;
+---
+
+<section id={id} class="persona-band" aria-labelledby={`${id}-title`}>
+  <div class="container wide">
+    <p class="eyebrow">{eyebrow}</p>
+    <h2 id={`${id}-title`}>{title}</h2>
+    <p class="description">{description}</p>
+    <div class="cards">
+      <slot />
+    </div>
+    <p class="go-deeper">
+      <a href={goDeeperHref}>{goDeeperLabel} →</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .persona-band {
+    padding: 56px 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .persona-band .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-primary);
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+
+  .persona-band h2 {
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    margin: 0 0 12px;
+  }
+
+  .persona-band .description {
+    font-size: 17px;
+    color: var(--color-text-muted);
+    margin: 0 0 24px;
+    max-width: 720px;
+    line-height: 1.55;
+  }
+
+  .persona-band .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .persona-band .go-deeper {
+    margin: 0;
+    font-size: 16px;
+  }
+  .persona-band .go-deeper a {
+    font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    .persona-band { padding: 40px 0; }
+    .persona-band h2 { font-size: 26px; }
+  }
+</style>

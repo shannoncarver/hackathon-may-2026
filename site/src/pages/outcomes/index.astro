@@ -1,0 +1,27 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="Outcomes"
+  eyebrow="Index"
+  lede="What came of the hackathon — outcomes, with a TL;DR, an Overview, and a Deep dive on each. Outcome content fills in across Milestones 2–4."
+  breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'Outcomes' }]}
+>
+  <Callout variant="info" label="Status">
+    <p>Outcome pages will be authored as the hackathon winds down. Each page lands at three depth tiers: <strong>TL;DR</strong> (3 bullets), <strong>Overview</strong> (1 page), and <strong>Deep dive</strong> (linked source).</p>
+  </Callout>
+
+  <h2>Coming soon</h2>
+  <ul>
+    <li>Three-layer LLM-wiki for project knowledge — pillar: Knowledge base.</li>
+    <li>Coordinator + nine specialist sub-agents — pillar: Agent definitions.</li>
+    <li>Centralized platform MCP design — pillar: MCP connectors.</li>
+    <li>AWS multi-account skill credentials pattern — pillar: Skills management.</li>
+    <li>Eval harness — Inspect-AI per-agent + e2e tests — pillar: Quality.</li>
+  </ul>
+</ArticleLayout>

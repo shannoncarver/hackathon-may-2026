@@ -1,0 +1,48 @@
+---
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  breadcrumb?: { label: string; href?: string }[];
+  bodyClass?: string;
+}
+
+const {
+  title,
+  description = 'LINQ Hackathon May 2026 — outcomes, decisions, and architecture from "The Forge: Season 2 — Every Minute Matters."',
+  breadcrumb,
+  bodyClass,
+} = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const fullTitle = title === 'Home' ? 'LINQ Hackathon · May 2026' : `${title} · LINQ Hackathon`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{fullTitle}</title>
+    <link rel="icon" type="image/svg+xml" href={`${baseUrl}favicon.svg`} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="theme-color" content="#134e5a" />
+  </head>
+  <body class={bodyClass}>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <SiteHeader breadcrumb={breadcrumb} />
+    <main id="main">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

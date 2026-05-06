@@ -1,0 +1,43 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+const repoUrl = 'https://github.com/shannoncarver/hackathon-may-2026';
+---
+
+<ArticleLayout
+  title="About"
+  eyebrow="What this is"
+  lede="A LINQ-internal hackathon entry exploring whether a coordinator-plus-specialists Claude Code setup is a force multiplier across engineering, product, support, and knowledge management."
+  breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'About' }]}
+>
+  <h2>The Forge: Season 2 — Every Minute Matters</h2>
+  <p>This repository is the LINQ Hackathon May 2026 entry. The theme is the use of AI for solutions and work. The vision is an internal AI workflow system that acts as a force multiplier for LINQ employees across disciplines — engineering, product, support, documentation, and IT / knowledge management — by providing on-demand assistance, knowledge transfer, solution enablement, and resolution support across LINQ's products and platform services.</p>
+
+  <h2>Architecture in one sentence</h2>
+  <p>A primary coordinator agent orchestrates work and delegates to domain-specialist sub-agents on demand. All inter-agent communication flows through the coordinator — no peer-to-peer chatter between specialists. Each sub-agent is scoped to a specific role with defined inputs, outputs, qualifications, and skills.</p>
+
+  <h2>Six pillars</h2>
+  <ol>
+    <li><strong>Knowledge base</strong> — three-layer LLM-wiki: <code>knowledge/raw/</code>, <code>knowledge/wiki/</code>, <code>knowledge/SCHEMA.md</code>.</li>
+    <li><strong>Repo structure</strong> — directory layout that scales with new agents, skills, and connectors.</li>
+    <li><strong>Documentation</strong> — separate tracks for developers, agents, and stakeholders.</li>
+    <li><strong>Agent definitions</strong> — qualifications, system prompts, allowed tools, JSON-schema I/O contracts.</li>
+    <li><strong>Skills management</strong> — how skills are authored, versioned, discovered, and assigned to agents.</li>
+    <li><strong>MCP connector inventory</strong> — which connectors each agent needs and how credentials/scopes are managed.</li>
+  </ol>
+
+  <h2>Working conventions</h2>
+  <ul>
+    <li>Cite sources. Patterns from Anthropic docs or community repos include URLs in the relevant doc.</li>
+    <li>Capture decisions in <code>docs/decisions/</code>. Every structural decision, link, and rationale lives in the repo.</li>
+    <li>Identify the pillar. When starting a task, state which of the six pillars it belongs to.</li>
+    <li>Reference quality posture (Decision 0010): thorough documentation over lightweight, auditable provenance, deterministic ops.</li>
+  </ul>
+
+  <h2>This site</h2>
+  <p>This site is the durable, post-hackathon artifact. Content fills in as the hackathon winds down — the structure and design system shipped first so authoring the rest is mechanical.</p>
+
+  <p><a href={repoUrl}>Source repository on GitHub →</a></p>
+</ArticleLayout>
