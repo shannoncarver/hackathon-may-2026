@@ -4,7 +4,7 @@ date: 2026-05-06
 category: skills-management
 ---
 
-# Decision 0017 — Auth0 stats skill: tenant-wide health dashboard atop the shared auth seam
+# Decision 0019 — Auth0 stats skill: tenant-wide health dashboard atop the shared auth seam
 
 **Status:** Accepted (2026-05-06).
 

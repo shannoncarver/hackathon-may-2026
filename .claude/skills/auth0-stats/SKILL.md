@@ -6,7 +6,7 @@ allowed-tools: Read, Glob, Grep, Bash
 
 # auth0-stats skill
 
-Operational how-to for tenant-wide Auth0 health checks. Where `/auth0-logs` answers "what events happened?" and `ha-debug` answers "what's wrong with this user?", `/auth0-stats` answers "what does our auth look like at the tenant level?" Stakeholder-friendly aggregate, not engineer-on-call triage. The standing decision is [Decision 0017](../../../docs/decisions/0017-auth0-stats-skill.md); the script lives at [`scripts/auth0_stats.py`](scripts/auth0_stats.py) and reuses the auth seam from the [`auth0-logs` skill's shared module](../auth0-logs/scripts/_auth0_common.py). Sandbox tenant only.
+Operational how-to for tenant-wide Auth0 health checks. Where `/auth0-logs` answers "what events happened?" and `ha-debug` answers "what's wrong with this user?", `/auth0-stats` answers "what does our auth look like at the tenant level?" Stakeholder-friendly aggregate, not engineer-on-call triage. The standing decision is [Decision 0019](../../../docs/decisions/0019-auth0-stats-skill.md); the script lives at [`scripts/auth0_stats.py`](scripts/auth0_stats.py) and reuses the auth seam from the [`auth0-logs` skill's shared module](../auth0-logs/scripts/_auth0_common.py). Sandbox tenant only.
 
 ## Three-step flow
 
@@ -108,4 +108,4 @@ Per [`.claude/rules/coordination.md`](../../rules/coordination.md):
 - [`../auth0-logs/scripts/_auth0_common.py`](../auth0-logs/scripts/_auth0_common.py) — shared auth seam and HTTP idioms
 - [Decision 0014](../../../docs/decisions/0014-auth0-logs-skill.md) — sibling skill standing decision (hybrid approach with swappable AuthProvider)
 - [Decision 0015](../../../docs/decisions/0015-centralized-platform-mcp.md) — future migration target
-- [Decision 0017](../../../docs/decisions/0017-auth0-stats-skill.md) — this skill's standing decision
+- [Decision 0019](../../../docs/decisions/0019-auth0-stats-skill.md) — this skill's standing decision

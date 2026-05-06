@@ -36,7 +36,7 @@ To use the `/auth0-logs` and `/auth0-stats` skills, you need M2M credentials for
    ```
 6. Test: run `/auth0-logs show me failed logins in the last 24 hours` (verifies `read:logs`) and `/auth0-stats this week` (verifies `read:stats`).
 
-The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL) and is shared across all `auth0-*` skills. Per [Decision 0014](../decisions/0014-auth0-logs-skill.md) and [Decision 0017](../decisions/0017-auth0-stats-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
+The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL) and is shared across all `auth0-*` skills. Per [Decision 0014](../decisions/0014-auth0-logs-skill.md) and [Decision 0019](../decisions/0019-auth0-stats-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
 
 ### Adding a scope to an existing M2M app
 
