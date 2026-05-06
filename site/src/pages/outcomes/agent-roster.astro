@@ -1,0 +1,107 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="Coordinator and nine specialist sub-agents"
+  description="A primary coordinator routes work to nine domain specialists with versioned JSON-schema I/O contracts and a clear trust boundary."
+  eyebrow="Outcome"
+  lede="We shipped a coordinator-plus-specialists architecture where the main session orchestrates nine domain-expert sub-agents, each with a versioned I/O contract and an explicit trust boundary that treats every specialist output as untrusted data."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Outcomes', href: join('/outcomes/') },
+    { label: 'Agent roster' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li>Nine specialist sub-agents live in <code>.claude/agents/</code> — Claude Code auto-discovers them; no custom dispatcher needed.</li>
+      <li>The coordinator is the main session (<code>CLAUDE.md</code> + <code>.claude/rules/coordination.md</code>), not a separate agent file, keeping one less layer of indirection for the demo.</li>
+      <li>Decision 0005 establishes that specialist outputs are untrusted data — every response is schema-validated and user-supplied content is wrapped before re-feeding downstream.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="overview">Overview</h2>
+  <p>
+    The agent roster is the execution layer of the LINQ AI workflow system. A single coordinator (the main Claude Code session, governed by <code>CLAUDE.md</code> and <code>.claude/rules/coordination.md</code>) receives user requests and delegates to one or more specialists. All inter-agent communication flows through the coordinator — specialists never call each other directly. Decision 0002 chose this pattern over a dedicated <code>00-coordinator.md</code> sub-agent to eliminate one layer of indirection and let the demo feel like talking to a single intelligent system.
+  </p>
+  <p>
+    Specialists live in <code>.claude/agents/</code> (Decision 0001), where Claude Code's harness auto-discovers them by filename. Each specialist file is a markdown document with YAML frontmatter that declares the agent's name, description, allowed tools, model, and MCP connector scoping. A companion long-form operating manual in <code>docs/agent/</code> covers scope, inputs, output contract, authoritative references, and a changelog. A JSON schema in <code>schemas/agents/</code> is the machine-readable I/O contract the coordinator validates against on every response.
+  </p>
+  <p>
+    Decision 0005 establishes the trust boundary: specialist outputs are untrusted data, not instructions. The coordinator wraps any user-supplied content in specialist responses before re-feeding it downstream, logs every validation failure to <code>output/</code>, and retries once on schema mismatch before surfacing the error. This is the same discipline production-grade agent systems enforce, brought into a hackathon-scale repo so it doesn't have to be retrofitted later.
+  </p>
+  <p>
+    <code>CLAUDE.md</code> is the source of truth for the roster. The pillar doc notes that the canonical example landed with <code>17-eng-ai</code>; the other agents shipped in follow-up PRs, one per PR, following the same file structure. The roster will continue to evolve as the system grows.
+  </p>
+
+  <h2 id="what-we-shipped">What we shipped</h2>
+  <ul>
+    <li>
+      <strong>10-eng-principal</strong> — Engineering Principal. Reviews architecture proposals, design changes, and structural decision records.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/10-eng-principal.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>11-eng-cloudops</strong> — CloudOps Engineer. AWS account management, CDK/Terraform, credentials, CI/CD, and secret management.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/11-eng-cloudops.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>12-eng-security-iam</strong> — Security &amp; IAM Engineer. IAM policy review, Auth0 security posture, cross-account trust boundaries, and attack-protection configuration.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/12-eng-security-iam.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>15-eng-qa</strong> — QA / Test Engineer. Test pyramids, acceptance-criteria automation, framework selection, and CI gating.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/15-eng-qa.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>17-eng-ai</strong> — AI Engineer. Claude ecosystem artifacts — sub-agents, skills, MCP connectors, plugins, evals, and agent design patterns. Canonical example agent.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/17-eng-ai.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>18-eng-product-handler</strong> — Product Handler Owner. Owns the handler registry and onboarding workflow for product-team MCP handlers under Decision 0015.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/18-eng-product-handler.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>30-docs-generator</strong> — Documentation Generator. Authors technical docs, user-facing docs, internal comms, and stakeholder collateral; reviews drafts for LINQ brand voice.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/30-docs-generator.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>40-knowledge-curator</strong> — Knowledge Curator. Owns the three-layer knowledge base — ingest, query, lint, and gap identification.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/40-knowledge-curator.md">Operating manual</a>.
+    </li>
+    <li>
+      <strong>50-pm-hackathon-coordinator</strong> — Hackathon Coordinator. Owns demo prep, presentation polish, and content review for "The Forge: Season 2 — Every Minute Matters" stakeholders and judges.
+      <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/agent/50-pm-hackathon-coordinator.md">Operating manual</a>.
+    </li>
+  </ul>
+
+  <h2 id="what-we-learned">What we learned</h2>
+  <ul>
+    <li>Making the coordinator the main session — not a sub-agent file — removes a layer of indirection and makes "you talk to the LINQ workforce assistant" a literal description of opening Claude Code in this repo.</li>
+    <li>Auto-discovery via <code>.claude/agents/</code> means adding a new specialist is a single-file PR with zero dispatcher changes; the constraint is writing a clear description so the coordinator routes correctly.</li>
+    <li>Versioned JSON schemas are the load-bearing seam: they let the coordinator validate, retry, and surface errors without knowing anything about specialist internals.</li>
+    <li>Shipping one canonical example agent (<code>17-eng-ai</code>) first, then landing each subsequent agent in its own PR, kept reviews small and the pattern easy to validate before scaling.</li>
+  </ul>
+
+  <h2 id="whats-next">What's next</h2>
+  <ul>
+    <li>Add the remaining specialist agents named in <code>CLAUDE.md</code> that are not yet represented by <code>docs/agent/</code> files (Frontend Developer, Backend Developer, Product Manager, Product Owner, Task Planner, Researcher — specific readiness status: unable to verify).</li>
+    <li>Wire the eval harness (<code>evals/run.py</code>) to run per-agent regression tests on every PR that touches an agent file or its schema.</li>
+    <li>Document on-call and escalation boundaries for the coordinator — which failures page which specialist owner — as the system moves toward production use.</li>
+  </ul>
+
+  <h2 id="deep-dive">Deep dive</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/pillars/4-agent-definitions.md">Pillar 4 — Agent definitions</a></li>
+    <li><strong>Decision 0001:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0001-specialist-location.md">Specialists live in <code>.claude/agents/</code></a></li>
+    <li><strong>Decision 0002:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0002-coordinator-placement.md">Coordinator is the main session</a></li>
+    <li><strong>Decision 0005:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0005-trust-boundary.md">Trust boundary on sub-agent outputs</a></li>
+    <li><strong>Source — agents:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/.claude/agents"><code>.claude/agents/</code></a></li>
+    <li><strong>Source — operating manuals:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/tree/main/docs/agent"><code>docs/agent/</code></a></li>
+    <li><strong>Roster source of truth:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/CLAUDE.md"><code>CLAUDE.md</code></a></li>
+  </ul>
+</ArticleLayout>

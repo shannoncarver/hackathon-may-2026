@@ -9,25 +9,43 @@ import PrimaryCard from '../components/PrimaryCard.astro';
 const baseUrl = import.meta.env.BASE_URL;
 const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
 
-// Placeholder outcome stubs — Milestone 1 ships structure; Milestone 2+ fills these in.
-const outcomeStubs = [
+// All five hackathon outcomes. The Featured section below is the canonical gallery;
+// persona bands offer tailored CTAs that route into one outcome each.
+const outcomes = [
   {
     href: join('/outcomes/knowledge-wiki/'),
     pillar: 'Knowledge base',
+    status: 'shipped' as const,
     title: 'Three-layer LLM-wiki for project knowledge',
     summary: 'Karpathy-style raw / wiki / SCHEMA pattern. Immutable sources, LLM-curated synthesis, audit-friendly provenance.',
   },
   {
     href: join('/outcomes/agent-roster/'),
     pillar: 'Agent definitions',
-    title: 'Coordinator + nine specialist sub-agents',
+    status: 'shipped' as const,
+    title: 'Coordinator and nine specialist sub-agents',
     summary: 'A primary coordinator routes work to nine domain specialists with versioned JSON-schema I/O contracts.',
   },
   {
     href: join('/outcomes/centralized-mcp/'),
     pillar: 'MCP connectors',
+    status: 'in-progress' as const,
     title: 'Centralized platform MCP design',
     summary: 'A single internal MCP server fronts LINQ products. IdentityBroker token exchange, audit trail, drift control.',
+  },
+  {
+    href: join('/outcomes/aws-skill-credentials/'),
+    pillar: 'Skills management',
+    status: 'shipped' as const,
+    title: 'AWS multi-account skill credentials',
+    summary: 'Named profiles, environment-derived defaults, prod-acknowledgment guard, sts:GetCallerIdentity audit banner.',
+  },
+  {
+    href: join('/outcomes/eval-harness/'),
+    pillar: 'Quality',
+    status: 'in-progress' as const,
+    title: 'Eval harness — Inspect-AI per-agent and end-to-end',
+    summary: 'Per-agent and e2e tests with a code-quality judge rubric. Reports land in evals/reports/.',
   },
 ];
 ---
@@ -43,11 +61,11 @@ const outcomeStubs = [
     </Hero>
 
     <section class="featured" aria-labelledby="featured-title">
-      <h2 id="featured-title">Featured outcomes</h2>
-      <p class="muted">A few of the threads worth pulling first. Full list lives under <a href={join('/outcomes/')}>Outcomes</a>.</p>
+      <h2 id="featured-title">Outcomes</h2>
+      <p class="muted">Five threads from the hackathon. Each card lands on a TL;DR, an Overview, and a Deep dive with linked sources for every claim.</p>
       <div class="outcome-grid">
-        {outcomeStubs.map((o) => (
-          <OutcomeCard href={o.href} pillar={o.pillar} status="shipped" title={o.title} summary={o.summary} />
+        {outcomes.map((o) => (
+          <OutcomeCard href={o.href} pillar={o.pillar} status={o.status} title={o.title} summary={o.summary} />
         ))}
       </div>
     </section>
@@ -57,26 +75,34 @@ const outcomeStubs = [
     id="exec"
     eyebrow="Path · Executive"
     title="If you have 60 seconds"
-    description="What we built, what came of it, and what we'd productionize. No code, no jargon."
+    description="What we built, what came of it, and what we would productionize. No code, no jargon."
     goDeeperHref={join('/outcomes/')}
     goDeeperLabel="See all outcomes"
   >
-    {outcomeStubs.map((o) => (
-      <OutcomeCard href={o.href} pillar={o.pillar} status="shipped" title={o.title} summary={o.summary} />
-    ))}
+    <PrimaryCard
+      href={join('/outcomes/agent-roster/')}
+      label="Start here"
+      title="Coordinator and nine specialist sub-agents"
+      description="The structural bet of the hackathon — one coordinator routes plain-English requests to specialists with versioned contracts. Read this one first."
+      cta="Read the outcome →"
+    />
   </PersonaBand>
 
   <PersonaBand
     id="pm"
     eyebrow="Path · Product"
     title="Use cases and what shipped"
-    description="The user journeys we proved out, the artifacts we left behind, and the things worth productionizing next."
-    goDeeperHref={join('/how-it-works/')}
-    goDeeperLabel="How it works"
+    description="The user journeys we proved out and the things worth productionizing next."
+    goDeeperHref={join('/tutorials/incident-triage/')}
+    goDeeperLabel="See the chain in action"
   >
-    {outcomeStubs.map((o) => (
-      <OutcomeCard href={o.href} pillar={o.pillar} status="shipped" title={o.title} summary={o.summary} />
-    ))}
+    <PrimaryCard
+      href={join('/tutorials/incident-triage/')}
+      label="Worked example"
+      title="Incident triage — five skills in one chain"
+      description="A realistic LINQ incident resolved in roughly four minutes. Auth0 events, AWS-side state, ERP authorization, then the resolution back into the wiki for the next on-call."
+      cta="Walk the chain →"
+    />
   </PersonaBand>
 
   <PersonaBand

@@ -1,0 +1,176 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="ha-debug"
+  description="Investigate a Harmony-Auth support ticket end-to-end. Assembles a case file from DynamoDB, CloudWatch, Cognito, and Auth0 — no escalation needed."
+  eyebrow="Tutorial"
+  lede="After this page, you will be able to triage a Harmony-Auth support ticket from symptom to a structured, persisted case file without escalating to an engineer."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Tutorials', href: join('/tutorials/') },
+    { label: 'ha-debug' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li><strong>What it does:</strong> Queries DynamoDB, CloudWatch, Cognito, and Auth0 in parallel and assembles a structured case file for a Harmony-Auth support ticket.</li>
+      <li><strong>When to reach for it:</strong> A user reports they cannot log in, MFA was not triggered, or you need to inspect a JWT — and you want evidence before escalating.</li>
+      <li><strong>The one command to know:</strong> <code>/ha-debug assemble-login-failure-case --email user@school.edu --window 24h</code></li>
+    </ul>
+  </Callout>
+
+  <h2 id="when-to-use">When to use this skill</h2>
+  <p>
+    Reach for ha-debug whenever a Tech Services ticket maps to one of three archetypes: a user cannot log in,
+    a user was not prompted for MFA, or you need to inspect a JWT that was rejected downstream. The skill
+    covers the AWS and Harmony-Auth side of the investigation — DynamoDB lock state, MFA enrollment,
+    app-client configuration, CloudWatch Lambda logs, and Cognito user status. Auth0 event logs are
+    complementary; run <code>/auth0-logs</code> alongside <code>assemble-login-failure-case</code> to get
+    the Auth0 event stream.
+  </p>
+  <p>
+    ha-debug is <strong>not</strong> the right tool for Auth0 configuration changes, AWS infrastructure
+    changes, or debugging products other than Harmony-Auth. It is read-only — it never writes to any
+    external system. The only write operation is <code>write-resolved-case</code>, which persists a
+    sanitized case file to the local knowledge wiki.
+  </p>
+
+  <h2 id="prerequisites">Prerequisites</h2>
+  <ul>
+    <li>Node.js installed (the CLI runs via <code>npx tsx</code>).</li>
+    <li>
+      A populated <code>ha-debug/.env</code> file at the repo root. Copy
+      <code>ha-debug/.env.example</code> and fill in the credentials. See
+      <code>docs/developer/onboarding.md</code> for credential setup — the skill does not acquire
+      credentials on your behalf.
+    </li>
+    <li>
+      The working directory must resolve to the repo root so that <code>ha-debug/.env</code> and the
+      script path are found correctly. The invocation below handles this with
+      <code>cd "$(git rev-parse --show-toplevel)"</code>.
+    </li>
+  </ul>
+
+  <h2 id="walkthrough">Walkthrough</h2>
+  <ol>
+    <li>
+      <p><strong>Quick symptom check — look up a user first.</strong></p>
+      <pre><code>{`cd "$(git rev-parse --show-toplevel)" && \\
+  set -a && source ha-debug/.env && set +a && \\
+  npx --prefix ha-debug tsx ha-debug/src/cli.ts get-user \\
+    --email john@school.edu`}</code></pre>
+      <p>
+        This queries Auth0 and Cognito in parallel and returns a snapshot of the user's identity state.
+        Check <code>cognitoStatus</code> — <code>FORCE_CHANGE_PASSWORD</code> or <code>DISABLED</code>
+        often pinpoints the archetype before you run a deeper assembler.
+      </p>
+    </li>
+    <li>
+      <p><strong>Assemble a full login-failure case.</strong></p>
+      <pre><code>{`cd "$(git rev-parse --show-toplevel)" && \\
+  set -a && source ha-debug/.env && set +a && \\
+  npx --prefix ha-debug tsx ha-debug/src/cli.ts assemble-login-failure-case \\
+    --email john@school.edu \\
+    --window 24h`}</code></pre>
+      <p>
+        The assembler joins CloudWatch Lambda logs, Auth0 user state, Cognito user status,
+        TokenCache, and LockRepository for the requested time window. Results arrive as JSON on
+        stdout; errors arrive as structured JSON on stderr.
+      </p>
+    </li>
+    <li>
+      <p><strong>Read the response.</strong> Focus on three fields first:</p>
+      <ul>
+        <li><code>lockState.locked</code> — <code>true</code> means an active DynamoDB lock; <code>lockedSinceMs</code> shows when it was set.</li>
+        <li><code>identity.cognitoStatus</code> — <code>FORCE_CHANGE_PASSWORD</code> means a password issue, not an auth-flow issue.</li>
+        <li><code>appClient.status</code> — <code>disabled</code> means the client itself is blocking all logins.</li>
+      </ul>
+    </li>
+    <li>
+      <p><strong>Common follow-ups.</strong> If Auth0 event codes or per-attempt failure descriptions are needed, run
+        <code>/auth0-logs</code> with the same email and window. Once the root cause is confirmed, persist
+        the case with <code>write-resolved-case</code> (see below) and then verify whether the affected
+        user is authorized in the ERP tenant using
+        <a href={join('/tutorials/verify-user-authorization/')}>verify-user-authorization</a>.
+      </p>
+    </li>
+  </ol>
+
+  <Callout variant="self-check" label="Did it work?">
+    <ul>
+      <li>JSON output appears on stdout — no "command not found" or Node.js errors.</li>
+      <li><code>identity.cognitoStatus</code> is present in the response (even if the value is <code>null</code>, the key should exist).</li>
+      <li>If there is a lock, <code>lockState.locked</code> is <code>true</code> and <code>lockedSinceMs</code> is a number.</li>
+    </ul>
+  </Callout>
+
+  <h2 id="output-shape">Output shape</h2>
+  <p>
+    On success, the assembler writes a structured JSON object to stdout. The fields below are from
+    <code>assemble-login-failure-case</code>; other subcommands share the same envelope shape with
+    subcommand-specific inner keys.
+  </p>
+  <pre><code>{`{
+  "identity": {
+    "email": "john@school.edu",
+    "auth0Id": "<redacted>",
+    "cognitoSub": "<redacted>",
+    "cognitoStatus": "CONFIRMED",
+    "cognitoEnabled": true,
+    "auth0Blocked": false
+  },
+  "lockState": { "locked": false, "lockedSinceMs": null },
+  "appClient": { "status": "enabled", "product": "ERP_V4" },
+  "cloudwatchLogs": []
+}`}</code></pre>
+  <p>
+    On error, stderr carries: <code>{`{ "error": "<kind>", "source": "<client>", "message": "...", "retryable": true }`}</code>.
+  </p>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+  <ul>
+    <li><strong><code>missing</code>:</strong> The user or record was not found. Do not assume the ticket is invalid — the user may exist under a different email. Ask the engineer to confirm before concluding.</li>
+    <li><strong><code>auth</code>:</strong> Credentials in <code>ha-debug/.env</code> are wrong or expired. See <code>docs/developer/onboarding.md</code> for refresh steps.</li>
+    <li><strong><code>throttled</code>:</strong> AWS or Auth0 rate limit hit. Wait 10–15 seconds and retry once. If it persists, note the rate-limited source and continue with partial data.</li>
+    <li><strong><code>timeout</code>:</strong> CloudWatch Logs Insights query exceeded the 30-second limit. Re-run with a narrower <code>--window</code> (e.g., <code>4h</code> instead of <code>24h</code>).</li>
+    <li><strong><code>unknown</code>:</strong> Surface the <code>message</code> and <code>source</code> fields verbatim to the engineer and ask them to check AWS credentials and connectivity.</li>
+  </ul>
+
+  <h2 id="persist">Persisting a resolved case</h2>
+  <p>
+    After the engineer confirms root cause and resolution, write the case to the knowledge wiki:
+  </p>
+  <pre><code>{`cd "$(git rev-parse --show-toplevel)" && \\
+  set -a && source ha-debug/.env && set +a && \\
+  npx --prefix ha-debug tsx ha-debug/src/cli.ts write-resolved-case \\
+    --case-json '<assembled case JSON>' \\
+    --hypothesis "Root cause in one sentence" \\
+    --resolution "What was done to fix it"`}</code></pre>
+  <p>
+    The command writes a Markdown file to <code>knowledge/wiki/cases/</code>. Confirm the file path
+    from the <code>{`{ "written": "..." }`}</code> stdout response. Only run this after the resolution
+    is confirmed — not speculatively.
+  </p>
+
+  <h2 id="where-this-fits">Where this fits</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href={join('/how-it-works/')}>Skills management</a></li>
+    <li><strong>Decision:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0018-ts-debugger-architecture.md">0018 — Tech Services debugger architecture</a> (standing architecture decision)</li>
+    <li><strong>Decision:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0017-case-as-wiki-bucket.md">0017 — case as a wiki bucket</a> (case persistence target)</li>
+    <li><strong>Source:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/ha-debug/SKILL.md"><code>.claude/skills/ha-debug/SKILL.md</code></a></li>
+  </ul>
+
+  <h2 id="next">Try the next skill</h2>
+  <p>
+    Once you have a case file assembled, use
+    <a href={join('/tutorials/verify-user-authorization/')}>verify-user-authorization</a> to confirm
+    whether the affected user holds an active authorization record in the LINQ ERP tenant — the natural
+    next step after a login-failure investigation.
+  </p>
+</ArticleLayout>

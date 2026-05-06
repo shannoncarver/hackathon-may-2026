@@ -1,27 +1,78 @@
 ---
 import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import OutcomeCard from '../../components/OutcomeCard.astro';
 import Callout from '../../components/Callout.astro';
 
 const baseUrl = import.meta.env.BASE_URL;
 const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+
+const outcomes = [
+  {
+    href: join('/outcomes/knowledge-wiki/'),
+    pillar: 'Knowledge base',
+    status: 'shipped' as const,
+    title: 'Three-layer LLM-wiki for project knowledge',
+    summary: 'Karpathy-style raw / wiki / SCHEMA pattern. Immutable sources, LLM-curated synthesis, audit-friendly provenance for every claim.',
+  },
+  {
+    href: join('/outcomes/agent-roster/'),
+    pillar: 'Agent definitions',
+    status: 'shipped' as const,
+    title: 'Coordinator and nine specialist sub-agents',
+    summary: 'A primary coordinator routes work to nine domain specialists with versioned JSON-schema I/O contracts and a clear trust boundary.',
+  },
+  {
+    href: join('/outcomes/centralized-mcp/'),
+    pillar: 'MCP connectors',
+    status: 'in-progress' as const,
+    title: 'Centralized platform MCP design',
+    summary: 'A single internal MCP server fronts LINQ products. IdentityBroker token exchange, audit trail, and drift control across handler teams.',
+  },
+  {
+    href: join('/outcomes/aws-skill-credentials/'),
+    pillar: 'Skills management',
+    status: 'shipped' as const,
+    title: 'AWS multi-account skill credentials',
+    summary: 'Named profiles, environment-derived defaults, prod-acknowledgment guard, and an sts:GetCallerIdentity audit banner before any AWS call.',
+  },
+  {
+    href: join('/outcomes/eval-harness/'),
+    pillar: 'Quality',
+    status: 'in-progress' as const,
+    title: 'Eval harness — Inspect-AI per-agent and end-to-end',
+    summary: 'Per-agent and e2e tests with a code-quality judge rubric. Inspect-AI framework. Reports land in evals/reports/.',
+  },
+];
 ---
 
 <ArticleLayout
   title="Outcomes"
   eyebrow="Index"
-  lede="What came of the hackathon — outcomes, with a TL;DR, an Overview, and a Deep dive on each. Outcome content fills in across Milestones 2–4."
+  lede="What came of the hackathon — five outcomes, each at three depth tiers: TL;DR, Overview, and Deep dive with linked sources for every claim."
   breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'Outcomes' }]}
 >
-  <Callout variant="info" label="Status">
-    <p>Outcome pages will be authored as the hackathon winds down. Each page lands at three depth tiers: <strong>TL;DR</strong> (3 bullets), <strong>Overview</strong> (1 page), and <strong>Deep dive</strong> (linked source).</p>
+  <Callout variant="info" label="How to read these">
+    <p>Each outcome page answers four questions in order: what we shipped, what came of it, what we learned, what's next. Skim the TL;DR for the headline; read the Overview for the synthesis; follow the Deep dive links for the authoritative artifacts.</p>
   </Callout>
 
-  <h2>Coming soon</h2>
-  <ul>
-    <li>Three-layer LLM-wiki for project knowledge — pillar: Knowledge base.</li>
-    <li>Coordinator + nine specialist sub-agents — pillar: Agent definitions.</li>
-    <li>Centralized platform MCP design — pillar: MCP connectors.</li>
-    <li>AWS multi-account skill credentials pattern — pillar: Skills management.</li>
-    <li>Eval harness — Inspect-AI per-agent + e2e tests — pillar: Quality.</li>
-  </ul>
+  <div class="grid">
+    {outcomes.map((o) => (
+      <OutcomeCard
+        href={o.href}
+        pillar={o.pillar}
+        status={o.status}
+        title={o.title}
+        summary={o.summary}
+      />
+    ))}
+  </div>
 </ArticleLayout>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 16px 0 32px;
+  }
+</style>
