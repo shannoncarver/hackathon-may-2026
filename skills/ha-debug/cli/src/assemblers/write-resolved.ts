@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Credentials } from '../auth';
 
 export interface ResolvedCaseInput {
   caseFile: Record<string, unknown>;
@@ -8,8 +7,8 @@ export interface ResolvedCaseInput {
   resolution: string;
 }
 
-export function writeResolvedCase(input: ResolvedCaseInput, creds: Credentials): string {
-  const dir = path.resolve(process.cwd(), creds.wikiCasesDir);
+export function writeResolvedCase(input: ResolvedCaseInput, wikiCasesDir: string): string {
+  const dir = path.resolve(process.cwd(), wikiCasesDir);
   fs.mkdirSync(dir, { recursive: true });
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);

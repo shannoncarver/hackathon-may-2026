@@ -16,10 +16,13 @@
     "@aws-sdk/client-cloudwatch-logs": "^3.758.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.758.0",
     "@aws-sdk/client-dynamodb": "^3.758.0",
+    "@aws-sdk/client-ssm": "^3.1043.0",
+    "@aws-sdk/client-sts": "^3.758.0",
+    "@aws-sdk/credential-providers": "^3.758.0",
     "@aws-sdk/lib-dynamodb": "^3.758.0",
+    "@aws-sdk/types": "^3.758.0",
     "auth0": "^4.19.0",
-    "commander": "^12.1.0",
-    "dotenv": "^16.4.7"
+    "commander": "^12.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

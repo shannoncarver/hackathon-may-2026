@@ -1,30 +1,50 @@
-import { DynamoDBClient, DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, DescribeTableCommand } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { Credentials } from '../auth';
+import { RuntimeContext } from '../auth';
+import { awsClientConfig } from '../aws-session';
 import { DataSourceError } from '../errors';
 import { AppClient, Lock, MultiFactorEnrollment, SuperAdminMFA } from '../types';
 
 export class HaDebugDynamoDBClient {
+  private readonly raw: DynamoDBClient;
   private readonly docClient: DynamoDBDocumentClient;
   private readonly accountsTable: string;
   private readonly superAdminMfaTable: string;
   private readonly appClientsTable: string;
 
-  constructor(creds: Credentials) {
-    const config: DynamoDBClientConfig = { region: creds.awsRegion };
-    if (creds.awsAccessKeyId && creds.awsSecretAccessKey) {
-      config.credentials = {
-        accessKeyId: creds.awsAccessKeyId,
-        secretAccessKey: creds.awsSecretAccessKey,
-        sessionToken: creds.awsSessionToken,
-      };
-    }
-    this.docClient = DynamoDBDocumentClient.from(new DynamoDBClient(config), {
+  constructor(ctx: RuntimeContext) {
+    this.raw = new DynamoDBClient(awsClientConfig(ctx));
+    this.docClient = DynamoDBDocumentClient.from(this.raw, {
       marshallOptions: { removeUndefinedValues: true },
     });
-    this.accountsTable = creds.accountsTableName;
-    this.superAdminMfaTable = creds.superAdminMfaTableName;
-    this.appClientsTable = creds.appClientsTableName;
+    this.accountsTable = ctx.accountsTableName;
+    this.superAdminMfaTable = ctx.superAdminMfaTableName;
+    this.appClientsTable = ctx.appClientsTableName;
+  }
+
+  async describeTable(tableName: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+    try {
+      await this.raw.send(new DescribeTableCommand({ TableName: tableName }));
+      return { ok: true };
+    } catch (err) {
+      const e = err as { name?: string; message?: string };
+      const name = e?.name ?? '';
+      if (name === 'ResourceNotFoundException') {
+        return { ok: false, reason: `Table '${tableName}' does not exist in this account/region.` };
+      }
+      if (name === 'AccessDeniedException') {
+        return { ok: false, reason: `Access denied to '${tableName}'. The SSO role lacks dynamodb:DescribeTable.` };
+      }
+      return { ok: false, reason: e?.message ?? String(err) };
+    }
+  }
+
+  get tableNames(): { accounts: string; superAdminMfa: string; appClients: string } {
+    return {
+      accounts: this.accountsTable,
+      superAdminMfa: this.superAdminMfaTable,
+      appClients: this.appClientsTable,
+    };
   }
 
   async getLockRecord(userId: string): Promise<Lock | undefined> {

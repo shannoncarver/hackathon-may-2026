@@ -1,11 +1,11 @@
 import {
   CloudWatchLogsClient,
-  CloudWatchLogsClientConfig,
   StartQueryCommand,
   GetQueryResultsCommand,
   QueryStatus,
 } from '@aws-sdk/client-cloudwatch-logs';
-import { Credentials } from '../auth';
+import { RuntimeContext } from '../auth';
+import { awsClientConfig } from '../aws-session';
 import { DataSourceError } from '../errors';
 
 export interface CwLogEntry {
@@ -16,22 +16,21 @@ export interface CwLogEntry {
 
 export class HaDebugCloudWatchClient {
   private readonly client: CloudWatchLogsClient;
-  private readonly logGroupName: string;
+  private readonly logGroupNames: string[];
 
-  constructor(creds: Credentials) {
-    const config: CloudWatchLogsClientConfig = { region: creds.awsRegion };
-    if (creds.awsAccessKeyId && creds.awsSecretAccessKey) {
-      config.credentials = {
-        accessKeyId: creds.awsAccessKeyId,
-        secretAccessKey: creds.awsSecretAccessKey,
-        sessionToken: creds.awsSessionToken,
-      };
-    }
-    this.client = new CloudWatchLogsClient(config);
-    this.logGroupName = creds.cwLogGroupName;
+  constructor(ctx: RuntimeContext) {
+    this.client = new CloudWatchLogsClient(awsClientConfig(ctx));
+    this.logGroupNames = ctx.cwLogGroupNames;
+  }
+
+  get groupNames(): string[] {
+    return [...this.logGroupNames];
   }
 
   async queryAuthLogs(searchTerm: string, windowMs: number, limit = 50): Promise<CwLogEntry[]> {
+    if (this.logGroupNames.length === 0) {
+      return [];
+    }
     const endTime = Date.now();
     const startTime = endTime - windowMs;
     const query = [
@@ -44,15 +43,16 @@ export class HaDebugCloudWatchClient {
     let queryId: string;
     try {
       const res = await this.client.send(new StartQueryCommand({
-        logGroupName: this.logGroupName,
+        logGroupNames: this.logGroupNames,
         startTime: Math.floor(startTime / 1000),
         endTime: Math.floor(endTime / 1000),
         queryString: query,
       }));
       queryId = res.queryId!;
-    } catch (err: any) {
-      const kind = err?.name === 'ThrottlingException' ? 'throttled' : 'unknown';
-      throw new DataSourceError('cloudwatch:start-query', kind, true, err, `Failed to start CloudWatch query for: ${searchTerm}`);
+    } catch (err) {
+      const e = err as { name?: string };
+      const kind = e?.name === 'ThrottlingException' ? 'throttled' : 'unknown';
+      throw new DataSourceError('cloudwatch:start-query', kind, true, err, `Failed to start CloudWatch query for: ${searchTerm} across ${this.logGroupNames.length} log groups`);
     }
 
     return this.poll(queryId);
