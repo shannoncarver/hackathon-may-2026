@@ -20,23 +20,35 @@ claude                       # opens Claude Code in this project
 
 The Atlassian MCP server uses per-user OAuth — the first invocation prompts for consent.
 
-## Auth0 Logs Setup (optional)
+## Auth0 Skills Setup (optional)
 
-To use the `/auth0-logs` skill, you need M2M credentials for the sandbox tenant.
+To use the `/auth0-logs` and `/auth0-stats` skills, you need M2M credentials for the sandbox tenant.
 
 1. In the Auth0 Dashboard at <https://manage.auth0.com>, switch to the `linq-accounts-sandbox` tenant.
 2. Navigate to **Applications → Applications → Create Application**.
 3. Choose **Machine to Machine Applications**, name it descriptively (e.g., `LINQ AI Workflow - Logs Reader`), and click **Create**.
-4. When prompted, authorize against **Auth0 Management API** with the single scope `read:logs` (principle of least privilege).
+4. When prompted, authorize against **Auth0 Management API** with the scopes `read:logs` and `read:stats` (principle of least privilege — only what the skills actually need). `read:logs` powers `/auth0-logs` and the log-derived metrics in `/auth0-stats`; `read:stats` powers the daily and MAU sections of `/auth0-stats`.
 5. From the application's Settings tab, copy the **Domain**, **Client ID**, and **Client Secret** into `.env`:
    ```
    AUTH0_DOMAIN=linq-accounts-sandbox.us.auth0.com
    AUTH0_CLIENT_ID=...
    AUTH0_CLIENT_SECRET=...
    ```
-6. Test: run `/auth0-logs show me failed logins in the last 24 hours`.
+6. Test: run `/auth0-logs show me failed logins in the last 24 hours` (verifies `read:logs`) and `/auth0-stats this week` (verifies `read:stats`).
 
-The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL). Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
+The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL) and is shared across all `auth0-*` skills. Per [Decision 0014](../decisions/0014-auth0-logs-skill.md) and [Decision 0017](../decisions/0017-auth0-stats-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
+
+### Adding a scope to an existing M2M app
+
+If you already have the M2M app from an earlier setup and need to add `read:stats`:
+
+1. In the Auth0 Dashboard, navigate to **Applications → [your M2M app] → APIs**.
+2. Expand **Auth0 Management API** in the list.
+3. Check **`read:stats`** alongside the existing `read:logs`. Click **Update**.
+4. Delete the cached token so the next invocation re-grants with the new scope: `rm .auth0-token.json`.
+5. Test with `/auth0-stats this week`.
+
+No client secret rotation is needed — the existing credentials keep working with the expanded scope.
 
 ### If your `.env` is exposed
 
