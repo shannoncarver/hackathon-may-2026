@@ -22,21 +22,30 @@ The Atlassian MCP server uses per-user OAuth — the first invocation prompts fo
 
 ## Auth0 Skills Setup (optional)
 
-To use the `/auth0-logs` and `/auth0-stats` skills, you need M2M credentials for the sandbox tenant.
+To use the `/auth0-logs`, `/auth0-stats`, and `/auth0-sec` skills, you need M2M credentials for the sandbox tenant.
 
 1. In the Auth0 Dashboard at <https://manage.auth0.com>, switch to the `linq-accounts-sandbox` tenant.
 2. Navigate to **Applications → Applications → Create Application**.
 3. Choose **Machine to Machine Applications**, name it descriptively (e.g., `LINQ AI Workflow - Logs Reader`), and click **Create**.
-4. When prompted, authorize against **Auth0 Management API** with the scopes `read:logs` and `read:stats` (principle of least privilege — only what the skills actually need). `read:logs` powers `/auth0-logs` and the log-derived metrics in `/auth0-stats`; `read:stats` powers the daily and MAU sections of `/auth0-stats`.
+4. When prompted, authorize against **Auth0 Management API** with the following scopes (principle of least privilege — only what the skills actually need):
+   - `read:logs` — `/auth0-logs` and the log-derived metrics in `/auth0-stats` and `/auth0-sec`
+   - `read:stats` — daily and MAU sections of `/auth0-stats`
+   - `read:anomaly_blocks` — IP block status in `/auth0-sec`
+   - `read:attack_protection` — policy config endpoints in `/auth0-sec`
+   - `read:users` — user-blocks lookup in `/auth0-sec`
 5. From the application's Settings tab, copy the **Domain**, **Client ID**, and **Client Secret** into `.env`:
    ```
    AUTH0_DOMAIN=linq-accounts-sandbox.us.auth0.com
    AUTH0_CLIENT_ID=...
    AUTH0_CLIENT_SECRET=...
    ```
-6. Test: run `/auth0-logs show me failed logins in the last 24 hours` (verifies `read:logs`) and `/auth0-stats this week` (verifies `read:stats`).
+6. Test: run `/auth0-logs show me failed logins in the last 24 hours` (verifies `read:logs`), `/auth0-stats this week` (verifies `read:stats`), and `/auth0-sec policy` (verifies `read:attack_protection`).
 
+<<<<<<< HEAD
 The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL) and is shared across all `auth0-*` skills. Per [Decision 0014](../decisions/0014-auth0-logs-skill.md) and [Decision 0019](../decisions/0019-auth0-stats-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
+=======
+The Management API token caches to `.auth0-token.json` (gitignored, 24-hour TTL) and is shared across all `auth0-*` skills. Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), [Decision 0017](../decisions/0017-auth0-stats-skill.md), and [Decision 0018](../decisions/0018-auth0-sec-skill.md), this standalone setup is temporary—it will be retired when the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) reaches M4.
+>>>>>>> 4f76d21 (auth0-sec: subject-driven security inspection skill (Decision 0018))
 
 ### Adding a scope to an existing M2M app
 
