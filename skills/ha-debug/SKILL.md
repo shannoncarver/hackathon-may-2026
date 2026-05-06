@@ -115,6 +115,8 @@ Identify which archetype the ticket matches, then pick the subcommand.
 
 **Auth0 log events are owned by the `auth0-logs` skill.** For the login failure archetype, always run `/auth0-logs` alongside `ha-debug` to get the Auth0 event stream. The two outputs are complementary: `ha-debug` shows AWS-side state, `auth0-logs` shows what Auth0 recorded for each login attempt.
 
+> **Important — Auth0 tenant ≠ AWS environment.** The AWS `--environment` (`dev`/`prod`) controls which DynamoDB tables, Cognito pools, and CloudWatch log groups the CLI queries. It does **not** determine which Auth0 tenant to query. The dev AWS account holds SSM credentials for multiple Auth0 tenants (`sandbox`, `dev`, `perf`, `staging`) under `/idp/<tenant>/userManagement/clientId|clientSecret`. Always ask the engineer which Auth0 environment the affected user was logging into before invoking `/auth0-logs`. Do not assume the Auth0 tenant matches the AWS environment name. Resolve the correct domain from `/idp/<tenant>/authTenant` (take the first comma-separated value if the parameter contains multiple hostnames).
+
 ## Step 2 — Execute
 
 Run from the repo root. No `.env` file is needed — the CLI discovers all resources from SSM Parameter Store and AWS APIs once the engineer is logged into AWS SSO. Pass `--environment dev|prod` on every subcommand that hits AWS or Auth0; add `--i-understand-this-is-prod` whenever `--environment prod`.
