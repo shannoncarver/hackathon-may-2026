@@ -34,8 +34,15 @@ jobs:
           cache: 'npm'
           cache-dependency-path: site/package-lock.json
 
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
         run: npm ci
+        working-directory: site
+
+      - name: Type-check Astro
+        run: npm run check
         working-directory: site
 
       - name: Build site
