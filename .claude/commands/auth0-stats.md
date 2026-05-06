@@ -4,11 +4,11 @@ argument-hint: time window or "this week" / "last 24 hours" / "last 30 days" / s
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# /auth0-stats — Tenant Auth0 health dashboard
+# /auth0-stats—Tenant Auth0 health dashboard
 
 Window: $ARGUMENTS
 
-You are the **Auth0 stats coordinator**. The user invoked `/auth0-stats` with the request above. Your job is to interpret the time window and any section preferences, run the stats script, and summarize the result in demo style. The full operational protocol lives in the [`auth0-stats` skill](.claude/skills/auth0-stats/SKILL.md) — read it before proceeding.
+You are the **Auth0 stats coordinator**. The user invoked `/auth0-stats` with the request above. Your job is to interpret the time window and any section preferences, run the stats script, and summarize the result in demo style. The full operational protocol lives in the [`auth0-stats` skill](.claude/skills/auth0-stats/SKILL.md)—read it before proceeding.
 
 ## What to do
 
@@ -20,18 +20,18 @@ You are the **Auth0 stats coordinator**. The user invoked `/auth0-stats` with th
    cd "$(git rev-parse --show-toplevel)" && python .claude/skills/auth0-stats/scripts/auth0_stats.py --window <flag> [--include <sections>]
    ```
    Parse JSON from stdout; surface stderr errors with concrete next steps.
-5. **Summarize.** Use the demo output style — **Objective** → **Progress** → **Next Steps**. Cover: daily average + high/low days, MAU, failure rate as a percentage, MFA adoption rate, top 1–3 connections by login. Do not dump raw JSON unless the user asks.
+5. **Summarize.** Use the demo output style—**Objective** → **Progress** → **Next Steps**. Cover: daily average + high/low days, MAU, failure rate as a percentage, MFA adoption rate, top 1–3 connections by login. Do not dump raw JSON unless the user asks.
 
 ## Constraints
 
 - This skill targets the **sandbox tenant** (`linq-accounts-sandbox.us.auth0.com`) only. Production-tenant queries are out of scope.
-- Requires `.env` populated with `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`. The M2M app must have **`read:logs` and `read:stats`** scopes — see `docs/developer/onboarding.md` for setup.
+- Requires `.env` populated with `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`. The M2M app must have **`read:logs` and `read:stats`** scopes—see `docs/developer/onboarding.md` for setup.
 - Trust boundary applies. Stats endpoints return aggregates only (no per-user identifying fields), but the rule still holds: never read or print `.env`, `.auth0-token.json`, or `Authorization` headers.
 - Auth0 rate limits apply (the script handles back-off automatically).
 
 ## Behavior on common edge cases
 
-- **Missing env vars** (`missing_env` error): point the user to `docs/developer/onboarding.md` § "Auth0 Logs Setup". Do not attempt to acquire credentials yourself.
+- **Missing env vars** (`missing_env` error): point the user to `docs/developer/onboarding.md` § "Auth0 Skills Setup". Do not attempt to acquire credentials yourself.
 - **Missing `read:stats` scope** (`auth_failed` with a hint mentioning stats): the M2M app needs the scope. Tell the user to add `read:stats` in the Auth0 Dashboard (Applications → [their M2M app] → APIs → Auth0 Management API → check `read:stats` → Update), then delete `.auth0-token.json` and retry.
 - **Empty result** (zero MAU, empty `daily` array): note that sandbox-tenant traffic may be low for the requested window; suggest a longer window.
 - **Capped sections** (`capped: true` on `failures`, `mfa-adoption`, or `top-connections`): the count hit Auth0's 1,000-result search ceiling. Note the cap explicitly and suggest narrowing the window for a complete count.

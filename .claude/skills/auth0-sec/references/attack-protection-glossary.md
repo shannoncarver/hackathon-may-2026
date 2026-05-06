@@ -1,4 +1,4 @@
-# Auth0 Attack Protection — Glossary and Baselines
+# Auth0 Attack Protection—Glossary and Baselines
 
 What each `/auth0-sec` policy field means in plain language, what counts as a healthy posture, and what to drill into when something looks off.
 
@@ -13,7 +13,7 @@ Auth0 cross-references login passwords against known credential-breach corpuses 
 | Field | Meaning |
 |-------|---------|
 | `enabled` | `true` to do anything. `false` means breach detection is off; no signal at all. |
-| `shields` | List of actions. Common values: `block` (deny login), `admin_notification` (email an admin), `user_notification` (email the user). Combinations are allowed. |
+| `shields` | List of actions. Common values: `block` (deny login), `admin_notification` (email an admin), and `user_notification` (email the user). Combinations are allowed. |
 | `admin_notification_frequency` | How often the admin email fires (immediately / daily / weekly). |
 | `method` | Detection method. `standard` (passwords vs. breach corpus) or `enhanced` (broader signals). |
 
@@ -38,7 +38,7 @@ Tracks repeated failed logins from the same user account. After a threshold, blo
 | Field | Meaning |
 |-------|---------|
 | `enabled` | Master switch. |
-| `mode` | `count_per_identifier_and_ip` (default — track per user+IP combo) or `count_per_identifier` (track per user across IPs). |
+| `mode` | `count_per_identifier_and_ip` (default—track per user+IP combo) or `count_per_identifier` (track per user across IPs). |
 | `max_attempts` | After this many failures within the window, block. Default is `10`. |
 | `allowlist` | IPs and CIDRs that are exempt. Typical: known office / VPN ranges. |
 | `shields` | Actions. `block` (deny further attempts), `user_notification` (email the user that someone's trying to break in). |
@@ -46,13 +46,13 @@ Tracks repeated failed logins from the same user account. After a threshold, blo
 ### Healthy baseline
 
 - `enabled: true`
-- `max_attempts` between 5 and 15 — under 5 generates false positives from typo-prone humans, over 20 lets brute-force succeed
+- `max_attempts` between 5 and 15—under 5 generates false positives from typo-prone humans, over 20 lets brute-force succeed
 - `mode: count_per_identifier_and_ip` is the safer default; `count_per_identifier` is stricter but locks legitimate users out faster
 - `allowlist` should be small (under 10 entries). A large allowlist suggests broken access control upstream
 
 ### Drill-down
 
-If `enabled: false`, that's a real finding — escalate to eng-security-iam. If `max_attempts > 20`, ask whether the relaxed threshold is intentional. The `/auth0-logs type:limit_mu` query shows recent brute-force blocks.
+If `enabled: false`, that's a real finding—escalate to eng-security-iam. If `max_attempts > 20`, ask whether the relaxed threshold is intentional. The `/auth0-logs type:limit_mu` query shows recent brute-force blocks.
 
 ## Suspicious IP Throttling
 
@@ -67,19 +67,19 @@ Tracks failed logins by IP across all users. Catches credential-stuffing attempt
 | `enabled` | Master switch. |
 | `shields` | `block` (throttle further attempts), `admin_notification` (email an admin). |
 | `allowlist` | IPs and CIDRs that are exempt. **Capped at 100 entries.** |
-| `stage.pre-login` | Throttle config before login attempt — `max_attempts` and `rate` (per second). |
+| `stage.pre-login` | Throttle config before login attempt—`max_attempts` and `rate` (per second). |
 | `stage.pre-user-registration` | Throttle config for signup attempts. |
 
 ### Healthy baseline
 
 - `enabled: true`
 - `pre-login.max_attempts` typically 100 in a 15-minute window
-- `allowlist` should not include 0.0.0.0/0 or any wide CIDR — that defeats the purpose
+- `allowlist` should not include 0.0.0.0/0 or any wide CIDR—that defeats the purpose
 - Both `pre-login` and `pre-user-registration` should be enabled if the tenant accepts signups
 
 ### Drill-down
 
-If you see this policy disabled, treat as a real finding — credential-stuffing protection is the table-stakes baseline. The `/auth0-logs type:limit_wc OR type:limit_sul` query shows IPs being throttled.
+If you see this policy disabled, treat as a real finding—credential-stuffing protection is the table-stakes baseline. The `/auth0-logs type:limit_wc OR type:limit_sul` query shows IPs being throttled.
 
 ## IP Block (anomaly endpoint)
 
@@ -101,7 +101,7 @@ If an IP shows `blocked: true`, run `/auth0-logs ip:"<ip>"` to see the underlyin
 
 **Source:** `GET /api/v2/user-blocks?identifier=...` or `GET /api/v2/user-blocks/{id}`
 
-Auth0 separately tracks per-user lockout state from too many failed logins on that user's account (different mechanism from suspicious-IP throttling — same effect on the user).
+Auth0 separately tracks per-user lockout state from too many failed logins on that user's account (different mechanism from suspicious-IP throttling—same effect on the user).
 
 ### Response shape
 
@@ -109,7 +109,7 @@ Auth0 separately tracks per-user lockout state from too many failed logins on th
 
 ### Drill-down
 
-If a user reports "I can't log in," check this first. If `blocked_for` is non-empty, the user is throttled — wait for the window or unblock manually in the Dashboard. The user's normal credential might still be correct.
+If a user reports "I can't log in," check this first. If `blocked_for` is non-empty, the user is throttled—wait for the window or unblock manually in the Dashboard. The user's normal credential might still be correct.
 
 ## Cross-skill follow-ups
 

@@ -27,12 +27,12 @@ To use the `/auth0-logs`, `/auth0-stats`, and `/auth0-sec` skills, you need M2M 
 1. In the Auth0 Dashboard at <https://manage.auth0.com>, switch to the `linq-accounts-sandbox` tenant.
 2. Navigate to **Applications → Applications → Create Application**.
 3. Choose **Machine to Machine Applications**, name it descriptively (e.g., `LINQ AI Workflow - Logs Reader`), and click **Create**.
-4. When prompted, authorize against **Auth0 Management API** with the following scopes (principle of least privilege — only what the skills actually need):
-   - `read:logs` — `/auth0-logs` and the log-derived metrics in `/auth0-stats` and `/auth0-sec`
-   - `read:stats` — daily and MAU sections of `/auth0-stats`
-   - `read:anomaly_blocks` — IP block status in `/auth0-sec`
-   - `read:attack_protection` — policy config endpoints in `/auth0-sec`
-   - `read:users` — user-blocks lookup in `/auth0-sec`
+4. When prompted, authorize against **Auth0 Management API** with the following scopes (principle of least privilege—only what the skills actually need):
+   - `read:logs`—`/auth0-logs` and the log-derived metrics in `/auth0-stats` and `/auth0-sec`
+   - `read:stats`—daily and MAU sections of `/auth0-stats`
+   - `read:anomaly_blocks`—IP block status in `/auth0-sec`
+   - `read:attack_protection`—policy config endpoints in `/auth0-sec`
+   - `read:users`—user-blocks lookup in `/auth0-sec`
 5. From the application's Settings tab, copy the **Domain**, **Client ID**, and **Client Secret** into `.env`:
    ```
    AUTH0_DOMAIN=linq-accounts-sandbox.us.auth0.com
@@ -57,7 +57,7 @@ If you already have the M2M app from an earlier setup and need to add `read:stat
 4. Delete the cached token so the next invocation re-grants with the new scope: `rm .auth0-token.json`.
 5. Test with `/auth0-stats this week`.
 
-No client secret rotation is needed — the existing credentials keep working with the expanded scope.
+No client secret rotation is needed—the existing credentials keep working with the expanded scope.
 
 ### If your `.env` is exposed
 
@@ -68,7 +68,7 @@ If you suspect the `.env` file or `.auth0-token.json` was leaked (accidental com
 3. Update `.env` with the new Client Secret.
 4. Re-test with `/auth0-logs show me the latest 5 events`.
 
-Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this manual rotation is operational debt — the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) M4 will replace this with broker-managed tokens.
+Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this manual rotation is operational debt—the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) M4 will replace this with broker-managed tokens.
 
 ## Adding a new sub-agent
 
