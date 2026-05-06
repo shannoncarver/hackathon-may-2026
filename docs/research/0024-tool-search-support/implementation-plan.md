@@ -1,4 +1,4 @@
-# Implementation plan — Tool Search support (ADR 0017)
+# Implementation plan — Tool Search support (ADR 0024)
 
 **Status:** Draft awaiting plan approval. Mission Phase 4 (code) gated on user sign-off.
 **Date:** 2026-05-05
@@ -10,19 +10,19 @@
 
 ## Goal and exit criteria
 
-Implement [ADR 0017](../../decisions/0017-tool-search-support.md) across M1 Phase C and M2 of the platform MCP server, with integration tests landing at M4. Exit criteria:
+Implement [ADR 0024](../../decisions/0024-tool-search-support.md) across M1 Phase C and M2 of the platform MCP server, with integration tests landing at M4. Exit criteria:
 
 1. `platform.search_tools`, `platform.whoami`, and `platform.list_products` are seeded in the registry, pass `mcp-handler-lint`, and dispatch end-to-end against a real Auth0 M2M token.
 2. `routes/tools-search.ts` returns ≤5 `tool_reference[]` blocks for a representative regex query, applying per-`client_id` projection before regex.
 3. `tools/list` accepts `cursor` and emits `nextCursor` for forward-compat with MCP `2025-06-18` pagination.
 4. Audit records carry the new `tools_loaded_via_search: string[]` field; platform tools emit audit records without `tenant_id`.
-5. All seven tests in [ADR 0017 §Phase-2 implementation](../../decisions/0017-tool-search-support.md#phase-2-implementation) pass: functional, RBAC negative, tenant-scope negative, read-only negative, fallback, pagination, audit.
+5. All seven tests in [ADR 0024 §Phase-2 implementation](../../decisions/0024-tool-search-support.md#phase-2-implementation) pass: functional, RBAC negative, tenant-scope negative, read-only negative, fallback, pagination, audit.
 6. Existing ADR 0015 acceptance criteria remain green (especially AC3, AC5, AC7, AC8).
 7. Client-side SDK helper at `sdk/client/typescript/src/defer-loading-helper.ts` exists, with one usage example in the README.
 
 ## Milestone mapping
 
-ADR 0015's implementation roadmap moves through six milestones (M1–M6). ADR 0017's 23 tasks land in three of them, with no work in M3 or M5–M6:
+ADR 0015's implementation roadmap moves through six milestones (M1–M6). ADR 0024's 23 tasks land in three of them, with no work in M3 or M5–M6:
 
 | ADR 0015 milestone | Status today | Tool Search tasks here | What this milestone delivers |
 |---|---|---|---|
@@ -34,7 +34,7 @@ ADR 0015's implementation roadmap moves through six milestones (M1–M6). ADR 00
 | **M4** — E2E happy path | Not started | T17, T18, T23 (integration / contract tests + final PR) light up here once `erp.checkUserAccess` is dispatchable end-to-end | First E2E `tools/call` against a real product handler |
 | **M5/M6** | Not started | none | Negative-test hardening, audit reconciliation, runbooks |
 
-**Why nothing lands in M3.** The three platform tools (`platform.search_tools`, `platform.whoami`, `platform.list_products`) read the registry and the verified principals, then return data. They never invoke a product handler, so they don't need IdentityBroker token exchange, STS assume-role, or cross-account dispatch. ADR 0017 introduces a new `handlerType: "platform-internal"` (T2) precisely so the dispatcher can route these tools without touching M3's seams.
+**Why nothing lands in M3.** The three platform tools (`platform.search_tools`, `platform.whoami`, `platform.list_products`) read the registry and the verified principals, then return data. They never invoke a product handler, so they don't need IdentityBroker token exchange, STS assume-role, or cross-account dispatch. ADR 0024 introduces a new `handlerType: "platform-internal"` (T2) precisely so the dispatcher can route these tools without touching M3's seams.
 
 **Why some tasks span M1 Phase C and M2.** A task like T10 (registry search method) modifies code that ships in M1 Phase C (`registry.ts`) but depends on a method that lands in M2 (`listToolsForClient` projection). The convention below is to tag each task by *where the file the task changes lives in the milestone roadmap*, not by what it depends on. Where dependencies cross milestones, the task body calls them out.
 
@@ -55,7 +55,7 @@ Each task ≤30 minutes of focused work. Files use absolute repo-relative paths 
 ### Phase A — Types and schema
 
 **T1 [M1-C, M2 — coordination] — M1 Phase C and M2 scope coordination (15 min, human checkpoint).**
-Confirm with M1 Phase C and M2 owners that ADR 0017 work merges into their respective PR series. Confirm branch strategy, test framework (Jest assumed), and review cadence across both milestones. **No code changes. Output: short Slack/PR comment recording the alignment.**
+Confirm with M1 Phase C and M2 owners that ADR 0024 work merges into their respective PR series. Confirm branch strategy, test framework (Jest assumed), and review cadence across both milestones. **No code changes. Output: short Slack/PR comment recording the alignment.**
 - Files: none.
 - Tests: none.
 - AC: M1 Phase C and M2 owners have acknowledged in writing.
@@ -102,7 +102,7 @@ Confirm with M1 Phase C and M2 owners that ADR 0017 work merges into their respe
 - Description: starts with `"Read-only. Searches the platform tool registry for handlers matching a Python regex. Returns up to 5 tool references that the API will auto-expand into full definitions."` Input: `{ query: string (max 200), limit?: number (max 5, default 5) }`. Output: array of `{ tool_name: string }` (matches MCP `tool_reference` shape — a content-block fragment, not a result envelope; the route assembles the wire shape).
 - Tests: lint pass, schema validation, plus an extra check that the description names `query` (DESC005 schema parity).
 - AC: lint passes including DESC005 (since `query` is required and named in the description).
-- Rollback: delete file. Removing this seed is the kill-switch per ADR 0017.
+- Rollback: delete file. Removing this seed is the kill-switch per ADR 0024.
 
 **T8 [M2] — Wire the three new seeds into the `04-registry-seed` CFN custom resource (25 min).**
 - Files: `linq-platform-mcp/infra/stacks/04-registry-seed.yaml` (modify) — add three CFN custom-resource invocations after the existing `erp.checkUserAccess` seed. Order: `platform.whoami`, `platform.list_products`, `platform.search_tools`.
@@ -207,14 +207,14 @@ Confirm with M1 Phase C and M2 owners that ADR 0017 work merges into their respe
 - Rollback: delete file.
 
 **T21 [M1-C] — Top-level `linq-platform-mcp/README.md` mention of Tool Search (15 min).**
-- Files: `linq-platform-mcp/README.md` (modify) — add a one-paragraph blurb under "Features" pointing at ADR 0017 and the SDK helper.
+- Files: `linq-platform-mcp/README.md` (modify) — add a one-paragraph blurb under "Features" pointing at ADR 0024 and the SDK helper.
 - Tests: N/A.
 - AC: section present; link to ADR resolves.
 - Rollback: revert the section.
 
 **T22 [M1-C, M2] — `CHANGELOG.md` entry (10 min).**
 - Files: `linq-platform-mcp/CHANGELOG.md` (modify).
-- Entry: M1 Phase C row gains "Tool Search server route + cursor pagination + `tools_loaded_via_search` audit field per ADR 0017"; M2 row gains "three `platform.*` registry seed items + registration-API exemption per ADR 0017".
+- Entry: M1 Phase C row gains "Tool Search server route + cursor pagination + `tools_loaded_via_search` audit field per ADR 0024"; M2 row gains "three `platform.*` registry seed items + registration-API exemption per ADR 0024".
 - Tests: N/A.
 - AC: entry committed alongside the code.
 - Rollback: revert.
@@ -222,15 +222,15 @@ Confirm with M1 Phase C and M2 owners that ADR 0017 work merges into their respe
 ### Phase G — Final review and merge
 
 ⏸ **CHECKPOINT (T23) [M4]:** human review of the full PR series before merge.
-- Files: PR description authored at `gh pr create` time, summarizing token impact (cite Anthropic's 85% claim — no LINQ-side measurement per ADR 0017's Q10 disposition), security analysis (link to ADR 0017's Phase-2 implementation section), and rollback plan (delete `platform.search_tools` seed item).
-- AC: PR has approval from one reviewer outside the work; CI green (Jest + sam validate + cfn-lint); ADR 0017 status notes the merged commit hash.
+- Files: PR description authored at `gh pr create` time, summarizing token impact (cite Anthropic's 85% claim — no LINQ-side measurement per ADR 0024's Q10 disposition), security analysis (link to ADR 0024's Phase-2 implementation section), and rollback plan (delete `platform.search_tools` seed item).
+- AC: PR has approval from one reviewer outside the work; CI green (Jest + sam validate + cfn-lint); ADR 0024 status notes the merged commit hash.
 - Rollback (post-merge): revert the PR series. Seed items disappear from the registry on next CFN deploy. SDK helper package is independent — leaving it published does not break callers since it is additive.
 
 ---
 
 ## Risks and watch-list
 
-- **M1 Phase C / M2 scope creep.** If either milestone absorbs work beyond ADR 0015's scaffold (e.g., schema-validate hardening, ratelimit ElastiCache migration), defer those to a follow-on milestone. ADR 0017's tasks are scoped narrowly to deliver the ADR's exit criteria.
+- **M1 Phase C / M2 scope creep.** If either milestone absorbs work beyond ADR 0015's scaffold (e.g., schema-validate hardening, ratelimit ElastiCache migration), defer those to a follow-on milestone. ADR 0024's tasks are scoped narrowly to deliver the ADR's exit criteria.
 - **Auth0 scope provisioning.** Tasks T5–T7 assume `platform:identity:read` and `platform:catalog:read` exist as Auth0 scopes. Coordinate with security to add them; no blocking dependency since seed-time registration only checks string presence.
 - **mcp-handler-lint friction on `platform.*` descriptions.** DESC001–009 were tuned for product handlers. The platform tools' descriptions must satisfy them anyway (tested in T5–T7). If any rule fires unexpectedly, surface to the registry-lint owner; do not bypass the lint.
 - **Pagination compat.** Some MCP clients on older SDKs may not handle `nextCursor` correctly. Compatibility falls back to flat list because returning all tools in one page (page size ≥ catalog size) is also valid. Keep `TOOLS_LIST_PAGE_SIZE` ≥ projected per-principal max for V1 (≤ 50).
@@ -238,7 +238,7 @@ Confirm with M1 Phase C and M2 owners that ADR 0017 work merges into their respe
 
 ## Cross-references
 
-- ADR — [`docs/decisions/0017-tool-search-support.md`](../../decisions/0017-tool-search-support.md)
+- ADR — [`docs/decisions/0024-tool-search-support.md`](../../decisions/0024-tool-search-support.md)
 - Deep-dive — [`deep-dives/mcp-native-progressive-tool-discovery.md`](deep-dives/mcp-native-progressive-tool-discovery.md)
 - Parent ADR — [`docs/decisions/0015-centralized-platform-mcp.md`](../../decisions/0015-centralized-platform-mcp.md)
 - Server scaffold — [`docs/research/0015-centralized-platform-mcp/implementation/03-mcp-server.md`](../0015-centralized-platform-mcp/implementation/03-mcp-server.md)

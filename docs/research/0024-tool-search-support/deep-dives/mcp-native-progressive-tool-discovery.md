@@ -1,7 +1,7 @@
 # Deep dive — MCP-native progressive tool discovery
 
-**Status:** Educational / further reading. Captures the design-space survey behind ADR 0017's choice to ship the Anthropic-API-side Tool Search Tool pattern rather than wait for an MCP-spec-native equivalent. Not part of any formal review record.
-**For:** [Decision 0017 — Tool Search support for the platform MCP server](../../../decisions/0017-tool-search-support.md). Backed by [Decision 0015 — Centralized Platform MCP Server](../../../decisions/0015-centralized-platform-mcp.md).
+**Status:** Educational / further reading. Captures the design-space survey behind ADR 0024's choice to ship the Anthropic-API-side Tool Search Tool pattern rather than wait for an MCP-spec-native equivalent. Not part of any formal review record.
+**For:** [Decision 0024 — Tool Search support for the platform MCP server](../../../decisions/0024-tool-search-support.md). Backed by [Decision 0015 — Centralized Platform MCP Server](../../../decisions/0015-centralized-platform-mcp.md).
 **Date:** 2026-05-05
 
 ---
@@ -10,7 +10,7 @@
 
 When LINQ asked "how should the platform MCP server support progressive tool discovery so agents don't load 200 tool definitions on connect?", the natural follow-up is: *is there an MCP-protocol-native answer, or are we stuck with vendor-specific tooling?*
 
-This document surveys the full design space — five distinct mechanisms across two layers (the Anthropic Messages API and the MCP protocol) — explains where each one sits today, and locks in the rationale for ADR 0017's chosen path. Operators reading this in 2027 should be able to re-evaluate without re-doing the research.
+This document surveys the full design space — five distinct mechanisms across two layers (the Anthropic Messages API and the MCP protocol) — explains where each one sits today, and locks in the rationale for ADR 0024's chosen path. Operators reading this in 2027 should be able to re-evaluate without re-doing the research.
 
 ---
 
@@ -101,7 +101,7 @@ The two designs are complementary, not exclusive. Where they sit today is the ac
 
 **What it doesn't do.** No filtering, no scoring, no relevance ranking — the full catalog still gets transferred eventually, just split across many round trips. If an agent paginates the whole catalog up front (which most do), pagination doesn't reduce the model's context cost; it just makes the wire protocol incremental.
 
-**When to revisit.** Pagination is cheap forward-compat. Adding `cursor` support to LINQ's `tools/list` implementation is a Phase C task with no design tax and is included in ADR 0017's plan even though our V1 catalog (per-principal projection caps at ~40 tools per agent) doesn't strictly need it yet.
+**When to revisit.** Pagination is cheap forward-compat. Adding `cursor` support to LINQ's `tools/list` implementation is a Phase C task with no design tax and is included in ADR 0024's plan even though our V1 catalog (per-principal projection caps at ~40 tools per agent) doesn't strictly need it yet.
 
 ### Path 3 — Per-principal `tools/list` projection (LINQ already does this)
 
@@ -137,7 +137,7 @@ The two designs are complementary, not exclusive. Where they sit today is the ac
 
 **What it doesn't do (yet).** It's a Draft. Building production code against it bets on the proposal landing without breaking changes — speculative for any V1 path.
 
-**When to revisit.** When the SEP lands and the MCP TypeScript / Python SDKs ship support, evaluate whether to add a native `query` parameter alongside the `platform.search_tools` MCP tool ADR 0017 introduces. The two can coexist — the SEP would be a second seam useful to non-Anthropic clients.
+**When to revisit.** When the SEP lands and the MCP TypeScript / Python SDKs ship support, evaluate whether to add a native `query` parameter alongside the `platform.search_tools` MCP tool ADR 0024 introduces. The two can coexist — the SEP would be a second seam useful to non-Anthropic clients.
 
 ### Path 5 — SEP-1888: Progressive Disclosure for Typed Library Discovery (Draft)
 
@@ -151,7 +151,7 @@ The two designs are complementary, not exclusive. Where they sit today is the ac
 
 **Where it executes.** MCP server, dispatched by the MCP server's normal `tools/call` pipeline.
 
-**Why this matters for LINQ.** The wire shape is **structurally identical** to the "Custom tool search implementation" hook in Anthropic's Tool Search Tool spec. Both designs have a server expose a tool that returns references-to-other-tools. If LINQ implements `platform.search_tools` per ADR 0017 today, the migration to SEP-1888 (if accepted) is cosmetic: rename to `linq.searchTools` and add a `mode` parameter. No re-architecture.
+**Why this matters for LINQ.** The wire shape is **structurally identical** to the "Custom tool search implementation" hook in Anthropic's Tool Search Tool spec. Both designs have a server expose a tool that returns references-to-other-tools. If LINQ implements `platform.search_tools` per ADR 0024 today, the migration to SEP-1888 (if accepted) is cosmetic: rename to `linq.searchTools` and add a `mode` parameter. No re-architecture.
 
 **Status.** Draft, no sponsor. Reference implementation by the author exists for Kubernetes ([ProDisco](https://github.com/harche/ProDisco)) but the spec hasn't been merged.
 
@@ -209,7 +209,7 @@ See also the wiki entity [`mcp-tool-catalog`](../../../knowledge/wiki/entities/m
 
 ---
 
-## Why ADR 0017 chose Path 1 + Path 5 (custom hook) over the SEPs
+## Why ADR 0024 chose Path 1 + Path 5 (custom hook) over the SEPs
 
 The decision lattice for this question reduces to four observations:
 
@@ -257,6 +257,6 @@ Re-evaluate the decision when any of the following occur:
 
 **LINQ context**
 - [ADR 0015 — Centralized Platform MCP Server](../../../decisions/0015-centralized-platform-mcp.md).
-- [ADR 0017 — Tool Search support for the platform MCP server](../../../decisions/0017-tool-search-support.md).
+- [ADR 0024 — Tool Search support for the platform MCP server](../../../decisions/0024-tool-search-support.md).
 - [Implementation 03 — MCP Server](../../0015-centralized-platform-mcp/implementation/03-mcp-server.md) — the Lambda scaffold the search route extends.
 - [Implementation 04 — Handler Registry](../../0015-centralized-platform-mcp/implementation/04-registry.md) — the registry the search backs onto.
