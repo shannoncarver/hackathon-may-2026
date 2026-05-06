@@ -294,11 +294,20 @@ def auth0_get(
             detail = resp.json().get("message", resp.text[:500])
         except (json.JSONDecodeError, ValueError):
             detail = resp.text[:500]
+        # Differentiate hints: 403 with "scope" in detail → permission, not freshness.
+        if "scope" in detail.lower():
+            hint = (
+                "The M2M app lacks a required scope. Add it in the Auth0 Dashboard "
+                "(Applications → [your app] → APIs → Auth0 Management API), then "
+                "delete .auth0-token.json so the next call refreshes the token."
+            )
+        else:
+            hint = "Token may be expired or credentials wrong. Delete .auth0-token.json and retry; if that fails, verify AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET."
         error_exit(
             "auth_failed",
             2,
             f"{resp.status_code}: {detail}",
-            "Token may be expired. Delete .auth0-token.json and retry.",
+            hint,
         )
 
     if not resp.ok:
