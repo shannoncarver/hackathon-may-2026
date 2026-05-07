@@ -1,6 +1,6 @@
 ---
 name: ha-debug
-description: Default skill for any LINQ authentication problem. Use when someone says a user can't log in, sign-in is failing, account is locked, MFA is not triggering, MFA is being bypassed, password is not working, session expired unexpectedly, JWT is rejected, Auth0 error, Cognito error, or any Harmony-Auth ticket. Also use for "does this user exist", "what is this user's status", "why can't users log in", "investigate this auth ticket", "show me Auth0 logs for this user", or any ERP, Titan, LINQConnect, or CTS login issue. Runs a setup preflight on every invocation — installs CLI deps and walks the engineer through missing AWS SSO or Auth0 credentials automatically. Route to auth0-management only when the question is explicitly tenant-wide rather than about a specific user.
+description: Default skill for any LINQ authentication problem. Use when someone says a user can't log in, sign-in is failing, account is locked, MFA is not triggering, MFA is being bypassed, password is not working, session expired unexpectedly, JWT is rejected, Auth0 error, Cognito error, or any Harmony-Auth ticket. Also use for "does this user exist", "what is this user's status", "why can't users log in", "investigate this auth ticket", "show me Auth0 logs for this user", or any ERP, Titan, LINQConnect, or CTS login issue. Runs a setup preflight on every invocation — installs CLI deps and walks the engineer through missing AWS SSO or Auth0 credentials automatically. Scoped to a specific user — does not answer tenant-wide Auth0 questions.
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
@@ -411,7 +411,7 @@ Per [`.claude/rules/coordination.md`](../../.claude/rules/coordination.md):
 
 ## When this skill does NOT apply
 
-- **Tenant-wide Auth0 queries** (bulk failure analysis, MAU stats, security posture, brute-force policy) → use the `auth0-management` skill instead. `ha-debug` is scoped to a specific user's event stream.
+- **Tenant-wide Auth0 queries** (bulk failure analysis, MAU stats, security posture, brute-force policy) — out of scope. `ha-debug` covers one user's event stream only.
 - **Auth0 configuration changes** (modifying Actions, RBAC, connections) → `12-eng-security-iam`.
 - **AWS infrastructure changes** → `11-eng-cloudops`.
 - **Non-Harmony-Auth products** — this skill is Harmony-Auth only. Other products are separate debuggers (follow-up ADRs).
