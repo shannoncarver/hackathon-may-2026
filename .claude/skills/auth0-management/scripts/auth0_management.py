@@ -25,11 +25,14 @@ Three-layer architecture (inherited from each predecessor):
 
 Subcommands:
 
-  logs   — query Auth0 Management API logs by Lucene query or checkpoint ID
-  stats  — tenant-wide auth health (daily, MAU, failures, MFA adoption,
-           top connections)
-  sec    — security inspection by subject (IP, email, user_id, or
-           'policy' / 'status')
+  logs    — query Auth0 Management API logs by Lucene query or checkpoint ID
+  stats   — tenant-wide auth health (daily, MAU, failures, MFA adoption,
+            top connections)
+  sec     — security inspection by subject (IP, email, user_id, or
+            'policy' / 'status')
+  clients — list/get Auth0 application (client) configuration; safe-projection
+            by default, never returns client_secret
+  user    — get a specific Auth0 user record by email or user_id
 
 Usage:
     python auth0_management.py logs --query 'type:f AND date:[2024-01-01 TO *]'
@@ -39,6 +42,10 @@ Usage:
     python auth0_management.py sec --subject 1.2.3.4 --days 7
     python auth0_management.py sec --subject jane@linq.com
     python auth0_management.py sec --subject policy
+    python auth0_management.py clients --name "ERP V4"
+    python auth0_management.py clients --client-id abc123def456
+    python auth0_management.py user --email scarver@linq.com
+    python auth0_management.py user --user-id 'auth0|abc123'
 
 See .claude/skills/auth0-management/SKILL.md for the operational protocol.
 See docs/decisions/0025-* for the merge decision.
@@ -81,6 +88,34 @@ USER_ID_PREFIXES = (
 )
 POLICY_KEYWORDS = {"policy", "config", "settings", "configuration"}
 STATUS_KEYWORDS = {"status", "posture", "overview", "summary", "all", ""}
+
+# clients subcommand — safe field projection. client_secret is intentionally absent.
+DEFAULT_CLIENT_FIELDS = (
+    "client_id,name,description,app_type,is_first_party,oidc_conformant,"
+    "grant_types,token_endpoint_auth_method,callbacks,allowed_logout_urls,"
+    "web_origins,allowed_origins,initiate_login_uri,jwt_configuration,"
+    "refresh_token,sso,cross_origin_authentication,custom_login_page_on,"
+    "tenant"
+)
+# Fields we will refuse to project even if the operator asks. These are credential
+# material or PII surfaces. The skill is read-only; a fetch path for a secret has
+# no operational use.
+FORBIDDEN_CLIENT_FIELDS = frozenset({"client_secret", "signing_keys", "encryption_key"})
+
+# user subcommand — safe field projection. password_hash and reset tokens never appear.
+# /api/v2/users-by-email accepts a strict subset of fields; multifactor is NOT in
+# that subset (it's only on /api/v2/users/{id}). We pick the intersection so the
+# default works for both endpoints. Use --fields to widen for /users/{id}.
+DEFAULT_USER_FIELDS = (
+    "user_id,email,email_verified,blocked,name,nickname,picture,"
+    "identities,last_login,last_ip,logins_count,"
+    "created_at,updated_at,app_metadata,user_metadata,"
+    "given_name,family_name"
+)
+FORBIDDEN_USER_FIELDS = frozenset({
+    "password_hash", "phone_password_hash", "last_password_reset",
+    "guardian_authenticators",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -544,6 +579,192 @@ class Auth0SecClient:
 
 
 # ---------------------------------------------------------------------------
+# Layer 2 — Auth0ClientsClient (clients subcommand)
+# Queries /api/v2/clients for application configuration. Read-only by design.
+# ---------------------------------------------------------------------------
+
+
+def _resolve_client_fields(requested: str | None) -> str:
+    """Apply the safe-projection rule and reject forbidden fields.
+
+    The forbidden set covers credential material (client_secret, signing_keys,
+    encryption_key). The skill is read-only and these fields have no operational
+    use here, so we refuse them even when explicitly asked.
+    """
+    fields = (requested or DEFAULT_CLIENT_FIELDS).strip()
+    requested_set = {f.strip() for f in fields.split(",") if f.strip()}
+    forbidden = requested_set & FORBIDDEN_CLIENT_FIELDS
+    if forbidden:
+        error_exit(
+            "bad_query",
+            3,
+            f"Refused fields: {sorted(forbidden)}",
+            (
+                "client_secret, signing_keys, and encryption_key are not retrievable "
+                "via this skill by design (read-only operational verification). "
+                "Use the Auth0 Dashboard if you need credential rotation."
+            ),
+        )
+    return ",".join(sorted(requested_set))
+
+
+class Auth0ClientsClient:
+    """Queries Auth0 Management API v2 clients endpoint (applications).
+
+    Required Auth0 M2M scope: read:clients. The script never requests
+    read:client_keys (which would expose client_secret) — that is a deliberate
+    boundary, not an oversight.
+    """
+
+    def __init__(self, domain: str, token: str) -> None:
+        self.domain = domain
+        self.session = make_session(token)
+        self.base_url = f"https://{domain}/api/v2/clients"
+
+    def list_clients(
+        self,
+        name_substr: str | None = None,
+        app_type: str | None = None,
+        is_first_party: bool | None = None,
+        fields: str | None = None,
+        per_page: int = 50,
+        max_pages: int = 5,
+    ) -> dict:
+        """List clients, optionally filtered. Filters name_substr client-side
+        because /api/v2/clients only supports app_type / is_first_party server-side.
+        """
+        projected = _resolve_client_fields(fields)
+
+        all_clients: list[dict] = []
+        for page in range(max_pages):
+            params: dict = {
+                "page": page,
+                "per_page": min(per_page, 100),
+                "include_totals": "false",
+                "include_fields": "true",
+                "fields": projected,
+            }
+            if app_type:
+                params["app_type"] = app_type
+            if is_first_party is not None:
+                params["is_first_party"] = "true" if is_first_party else "false"
+            resp = auth0_get(self.session, self.base_url, params)
+            data = resp.json()
+            page_clients = data if isinstance(data, list) else data.get("clients", [])
+            all_clients.extend(page_clients)
+            if len(page_clients) < per_page:
+                break
+
+        if name_substr:
+            needle = name_substr.lower()
+            filtered = [c for c in all_clients if needle in (c.get("name") or "").lower()]
+        else:
+            filtered = all_clients
+
+        sys.stderr.write(
+            f"[clients] endpoint={self.base_url} "
+            f"name_filter={name_substr!r} app_type={app_type!r} "
+            f"first_party={is_first_party!r} returned={len(filtered)} "
+            f"of_total_fetched={len(all_clients)}\n"
+        )
+
+        return {
+            "filter": {
+                "name_substr": name_substr,
+                "app_type": app_type,
+                "is_first_party": is_first_party,
+            },
+            "fields": projected,
+            "fetched": len(all_clients),
+            "matched": len(filtered),
+            "clients": filtered,
+        }
+
+    def get_client(self, client_id: str, fields: str | None = None) -> dict:
+        projected = _resolve_client_fields(fields)
+        url = f"{self.base_url}/{client_id}"
+        params = {"include_fields": "true", "fields": projected}
+        resp = auth0_get(self.session, url, params)
+        sys.stderr.write(f"[clients] endpoint={url} fields={projected}\n")
+        return {
+            "client_id": client_id,
+            "fields": projected,
+            "client": resp.json() if resp.content else {},
+        }
+
+
+# ---------------------------------------------------------------------------
+# Layer 2 — Auth0UsersClient (user subcommand)
+# Queries /api/v2/users-by-email and /api/v2/users/{id}. Read-only by design.
+# ---------------------------------------------------------------------------
+
+
+def _resolve_user_fields(requested: str | None) -> str:
+    """Apply the safe-projection rule and reject forbidden fields."""
+    fields = (requested or DEFAULT_USER_FIELDS).strip()
+    requested_set = {f.strip() for f in fields.split(",") if f.strip()}
+    forbidden = requested_set & FORBIDDEN_USER_FIELDS
+    if forbidden:
+        error_exit(
+            "bad_query",
+            3,
+            f"Refused fields: {sorted(forbidden)}",
+            (
+                "password_hash and credential-related fields are not retrievable via "
+                "this skill by design. Use the Auth0 Dashboard for credential audit."
+            ),
+        )
+    return ",".join(sorted(requested_set))
+
+
+class Auth0UsersClient:
+    """Queries Auth0 Management API v2 users endpoint.
+
+    Required Auth0 M2M scope: read:users. read:user_idp_tokens / read:current_user
+    are not requested.
+    """
+
+    def __init__(self, domain: str, token: str) -> None:
+        self.domain = domain
+        self.session = make_session(token)
+        self.base_url = f"https://{domain}/api/v2/users"
+        self.by_email_url = f"https://{domain}/api/v2/users-by-email"
+
+    def by_email(self, email: str, fields: str | None = None) -> dict:
+        projected = _resolve_user_fields(fields)
+        params = {
+            "email": email.strip().lower(),
+            "include_fields": "true",
+            "fields": projected,
+        }
+        resp = auth0_get(self.session, self.by_email_url, params)
+        data = resp.json()
+        users = data if isinstance(data, list) else []
+        sys.stderr.write(
+            f"[user] endpoint={self.by_email_url} "
+            f"email={email!r} matched={len(users)}\n"
+        )
+        return {
+            "lookup": {"email": email.strip().lower()},
+            "fields": projected,
+            "matched": len(users),
+            "users": users,
+        }
+
+    def by_id(self, user_id: str, fields: str | None = None) -> dict:
+        projected = _resolve_user_fields(fields)
+        url = f"{self.base_url}/{user_id}"
+        params = {"include_fields": "true", "fields": projected}
+        resp = auth0_get(self.session, url, params)
+        sys.stderr.write(f"[user] endpoint={url} fields={projected}\n")
+        return {
+            "lookup": {"user_id": user_id},
+            "fields": projected,
+            "user": resp.json() if resp.content else {},
+        }
+
+
+# ---------------------------------------------------------------------------
 # Layer 3 — CLI dispatch
 # ---------------------------------------------------------------------------
 
@@ -671,13 +892,61 @@ def _run_sec(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
     sys.stdout.write("\n")
 
 
+def _run_clients(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Dispatch the `clients` subcommand."""
+    if not args.client_id and not args.name and not args.app_type and args.is_first_party is None:
+        # Empty filter is allowed — operator wants the full list. No-op here.
+        pass
+
+    auth = EnvAuthProvider()
+    token = auth.get_token()
+    client = Auth0ClientsClient(auth.domain, token)
+
+    if args.client_id:
+        result = client.get_client(args.client_id, fields=args.fields)
+    else:
+        result = client.list_clients(
+            name_substr=args.name,
+            app_type=args.app_type,
+            is_first_party=args.is_first_party,
+            fields=args.fields,
+            per_page=args.per_page,
+            max_pages=args.max_pages,
+        )
+
+    json.dump(result, sys.stdout, indent=2, default=str)
+    sys.stdout.write("\n")
+
+
+def _run_user(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Dispatch the `user` subcommand."""
+    if not args.email and not args.user_id:
+        parser.error("Either --email or --user-id is required.")
+    if args.email and args.user_id:
+        parser.error("--email and --user-id are mutually exclusive.")
+
+    auth = EnvAuthProvider()
+    token = auth.get_token()
+    client = Auth0UsersClient(auth.domain, token)
+
+    if args.email:
+        result = client.by_email(args.email, fields=args.fields)
+    else:
+        result = client.by_id(args.user_id, fields=args.fields)
+
+    json.dump(result, sys.stdout, indent=2, default=str)
+    sys.stdout.write("\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="auth0_management.py",
-        description="Unified CLI for Auth0 Management API queries — logs, stats, sec.",
+        description="Unified CLI for Auth0 Management API queries — logs, stats, sec, clients, user.",
         epilog="Part of the LINQ auth0-management skill. See .claude/skills/auth0-management/SKILL.md.",
     )
-    sub = parser.add_subparsers(dest="subcommand", required=True, metavar="{logs,stats,sec}")
+    sub = parser.add_subparsers(
+        dest="subcommand", required=True, metavar="{logs,stats,sec,clients,user}"
+    )
 
     # -- logs subcommand ----------------------------------------------------
     p_logs = sub.add_parser(
@@ -750,6 +1019,67 @@ def main() -> None:
         help="For IP subject: how far back to look in /logs (default: 7 days).",
     )
 
+    # -- clients subcommand -------------------------------------------------
+    p_clients = sub.add_parser(
+        "clients",
+        help="List/get Auth0 application configuration. Read-only; never returns client_secret.",
+        description=(
+            "Query Auth0 Management API /api/v2/clients for application config. "
+            "Required scope: read:clients. The skill refuses to return client_secret, "
+            "signing_keys, or encryption_key by design."
+        ),
+    )
+    p_clients.add_argument(
+        "--name",
+        help="Case-insensitive substring match on client name (e.g., 'ERP V4').",
+    )
+    p_clients.add_argument(
+        "--client-id",
+        help="Fetch a single client by client_id. Mutually exclusive with --name in effect.",
+    )
+    p_clients.add_argument(
+        "--app-type",
+        help="Server-side filter: spa, regular_web, native, non_interactive.",
+    )
+    p_clients.add_argument(
+        "--is-first-party",
+        type=lambda v: None if v in (None, "") else v.lower() in ("1", "true", "yes"),
+        default=None,
+        help="Server-side filter: true | false. Omit for no filter.",
+    )
+    p_clients.add_argument(
+        "--fields",
+        help=(
+            "Comma-separated projection. Defaults to a verification-relevant set. "
+            "client_secret/signing_keys/encryption_key are always rejected."
+        ),
+    )
+    p_clients.add_argument("--per-page", type=int, default=50)
+    p_clients.add_argument("--max-pages", type=int, default=5)
+
+    # -- user subcommand ----------------------------------------------------
+    p_user = sub.add_parser(
+        "user",
+        help="Get a single Auth0 user record by email or user_id.",
+        description=(
+            "Query Auth0 Management API /api/v2/users-by-email or /api/v2/users/{id}. "
+            "Required scope: read:users. Returns a safe field projection; "
+            "password_hash and credential fields are refused."
+        ),
+    )
+    p_user.add_argument(
+        "--email",
+        help="Email address (case-insensitive). Uses /api/v2/users-by-email.",
+    )
+    p_user.add_argument(
+        "--user-id",
+        help="Auth0 user_id (e.g., 'auth0|abc123'). Uses /api/v2/users/{id}.",
+    )
+    p_user.add_argument(
+        "--fields",
+        help="Comma-separated projection. Defaults to a verification-relevant set.",
+    )
+
     args = parser.parse_args()
 
     # Dispatch — pass the appropriate per-subparser parser so .error() prints
@@ -760,6 +1090,10 @@ def main() -> None:
         _run_stats(args, p_stats)
     elif args.subcommand == "sec":
         _run_sec(args, p_sec)
+    elif args.subcommand == "clients":
+        _run_clients(args, p_clients)
+    elif args.subcommand == "user":
+        _run_user(args, p_user)
 
 
 if __name__ == "__main__":
