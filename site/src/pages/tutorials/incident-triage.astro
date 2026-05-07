@@ -36,11 +36,11 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
       xmlns="http://www.w3.org/2000/svg"
       style="max-width:100%;height:auto;display:block;"
     >
-      <title id="triage-chain-title">Five-skill incident triage chain: auth0-logs feeds auth0-sec, which feeds ha-debug, which feeds verify-user-authorization, which feeds kb-ingest.</title>
+      <title id="triage-chain-title">Five-skill incident triage chain: auth0-management (logs) feeds auth0-management (sec), which feeds ha-debug, which feeds verify-user-authorization, which feeds kb-ingest.</title>
 
-      <!-- Block 1: auth0-logs -->
+      <!-- Block 1: auth0-management (logs) -->
       <rect x="4" y="54" width="140" height="44" rx="6" fill="#0F8A9C" />
-      <text x="74" y="81" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#ffffff">auth0-logs</text>
+      <text x="74" y="81" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#ffffff">auth0-management (logs)</text>
 
       <!-- Arrow 1→2 -->
       <line x1="144" y1="76" x2="186" y2="76" stroke="#0F8A9C" stroke-width="2" />
@@ -48,9 +48,9 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
       <text x="170" y="46" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0A1F2C">subject</text>
       <text x="170" y="58" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#0A1F2C">identified</text>
 
-      <!-- Block 2: auth0-sec -->
+      <!-- Block 2: auth0-management (sec) -->
       <rect x="196" y="54" width="140" height="44" rx="6" fill="#0F8A9C" />
-      <text x="266" y="81" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#ffffff">auth0-sec</text>
+      <text x="266" y="81" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#ffffff">auth0-management (sec)</text>
 
       <!-- Arrow 2→3 -->
       <line x1="336" y1="76" x2="378" y2="76" stroke="#0F8A9C" stroke-width="2" />
@@ -83,19 +83,19 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
       <rect x="808" y="54" width="68" height="44" rx="6" fill="#0F8A9C" />
       <text x="842" y="81" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#ffffff">kb-ingest</text>
     </svg>
-    <figcaption style="font-size:13px;color:#6b7280;margin-top:8px;">The arrows trace what the engineer carries forward — not a programmatic data pipe between skills. In practice, auth0-logs and ha-debug typically run in parallel, since one covers Auth0 events and the other covers AWS-side state.</figcaption>
+    <figcaption style="font-size:13px;color:#6b7280;margin-top:8px;">The arrows trace what the engineer carries forward — not a programmatic data pipe between skills. In practice, auth0-management and ha-debug typically run in parallel, since one covers Auth0 events and the other covers AWS-side state.</figcaption>
   </figure>
 
   <h2 id="scenario">Scenario</h2>
   <p>A LINQ customer support engineer reports a spike of failed logins originating from IP <code>1.2.3.4</code> and says tenant administrator <code>alice@acme-isd.example.com</code> is locked out of the <code>acme-isd</code> district. School district administrators arrive in the morning — the window to resolve this is short. (<code>acme-isd</code> and <code>alice@acme-isd.example.com</code> are fictional; <code>.example.com</code> is an IANA-reserved domain for documentation.)</p>
 
   <Callout variant="info" label="Read-only by default">
-    <p>Four of the five skills in this chain are read-only — auth0-logs, auth0-sec, ha-debug's investigation subcommands, and verify-user-authorization. Only the last leg writes: kb-ingest dispatches the knowledge-curator, which is the sole agent permitted to author under <code>knowledge/</code>. verify-user-authorization additionally refuses prod runs without an explicit <code>--i-understand-this-is-prod</code> acknowledgment.</p>
+    <p>Four of the five skills in this chain are read-only — auth0-management's logs and sec subcommands, ha-debug's investigation subcommands, and verify-user-authorization. Only the last leg writes: kb-ingest dispatches the knowledge-curator, which is the sole agent permitted to author under <code>knowledge/</code>. verify-user-authorization additionally refuses prod runs without an explicit <code>--i-understand-this-is-prod</code> acknowledgment.</p>
   </Callout>
 
-  <h2 id="step-1">Step 1 — auth0-logs: pull recent events</h2>
-  <p>The support engineer opens a conversation with the coordinator and describes what they are seeing: failed logins from an unfamiliar IP. The coordinator dispatches auth0-logs, which translates the request into a Lucene query, computes a literal date range, shows a pre-flight summary by default, and runs only after the engineer confirms.</p>
-  <pre><code>/auth0-logs failed logins from ip 1.2.3.4 in the last 24 hours</code></pre>
+  <h2 id="step-1">Step 1 — auth0-management (logs): pull recent events</h2>
+  <p>The support engineer opens a conversation with the coordinator and describes what they are seeing: failed logins from an unfamiliar IP. The coordinator dispatches auth0-management's logs subcommand, which translates the request into a Lucene query, computes a literal date range, shows a pre-flight summary by default, and runs only after the engineer confirms.</p>
+  <pre><code>/auth0-management logs failed logins from ip 1.2.3.4 in the last 24 hours</code></pre>
   <p>The skill maps "failed logins" to event types <code>fp</code> (wrong password) and <code>fu</code> (invalid username), scopes the query to <code>ip:"1.2.3.4"</code>, and returns a JSON envelope. The fields to notice first are <code>total</code> (how many events matched), <code>logs[].type</code> (the Auth0 event code per attempt), and <code>logs[].user_name</code> (the targeted account). In this scenario the response surfaces twelve events, ten of which name <code>alice@acme-isd.example.com</code>.</p>
   <pre><code>{`{
   "query": "type:(fp OR fu) AND ip:\\"1.2.3.4\\" AND date:[2026-05-05 TO *]",
@@ -108,21 +108,21 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
   ]
 }`}</code></pre>
   <p><strong>What the operator now knows:</strong> there are confirmed failure events tied to a real user, <code>alice@acme-isd.example.com</code>. The coordinator's next routing decision — check whether the IP is currently blocked and whether Alice has active Auth0 user-blocks.</p>
-  <p><a href={join('/tutorials/auth0-logs/')}>Read the auth0-logs tutorial →</a></p>
+  <p><a href={join('/tutorials/auth0-management/')}>Read the auth0-management tutorial →</a></p>
 
-  <h2 id="step-2">Step 2 — auth0-sec: inspect the subject</h2>
-  <p>auth0-sec answers "what is the current security posture for this IP or user?" — a read-only inspection of the Auth0 anomaly and attack-protection endpoints. There is no pre-flight confirmation step; the skill is read-only and the queries are narrow. Run two invocations in sequence: one for the IP, one for the user.</p>
-  <pre><code>/auth0-sec 1.2.3.4</code></pre>
-  <p>The skill checks <code>/anomaly/blocks/ips/1.2.3.4</code> and surfaces the <code>block.blocked</code> boolean alongside a recent-activity breakdown by event type (default 7-day window; widen with <code>--days N</code>). If the IP is not yet blocked, the Next Steps suggest running <code>/auth0-stats failures</code> to check whether it is part of a wider pattern.</p>
-  <pre><code>/auth0-sec alice@acme-isd.example.com</code></pre>
+  <h2 id="step-2">Step 2 — auth0-management (sec): inspect the subject</h2>
+  <p>The auth0-management sec subcommand answers "what is the current security posture for this IP or user?" — a read-only inspection of the Auth0 anomaly and attack-protection endpoints. There is no pre-flight confirmation step; the subcommand is read-only and the queries are narrow. Run two invocations in sequence: one for the IP, one for the user.</p>
+  <pre><code>/auth0-management sec 1.2.3.4</code></pre>
+  <p>The skill checks <code>/anomaly/blocks/ips/1.2.3.4</code> and surfaces the <code>block.blocked</code> boolean alongside a recent-activity breakdown by event type (default 7-day window; widen with <code>--days N</code>). If the IP is not yet blocked, the Next Steps suggest running <code>/auth0-management stats failures</code> to check whether it is part of a wider pattern.</p>
+  <pre><code>/auth0-management sec alice@acme-isd.example.com</code></pre>
   <p>This invocation checks <code>/user-blocks?identifier=alice@acme-isd.example.com</code>. The response leads with the count of active block records and the most recent timestamp. A non-empty block list confirms Auth0 is enforcing a lockout on Alice's account.</p>
   <p><strong>What the operator now knows:</strong> the IP's block state, and that Alice has active user-blocks. The coordinator's next routing decision — assemble a full case file from the AWS side to see DynamoDB lock state, Cognito status, and CloudWatch errors.</p>
-  <p><a href={join('/tutorials/auth0-sec/')}>Read the auth0-sec tutorial →</a></p>
+  <p><a href={join('/tutorials/auth0-management/')}>Read the auth0-management tutorial →</a></p>
 
   <h2 id="step-3">Step 3 — ha-debug: assemble the case file</h2>
   <p>ha-debug covers the AWS and Harmony-Auth side of the investigation — DynamoDB lock state, Cognito user status, and CloudWatch Lambda logs. The <code>assemble-login-failure-case</code> subcommand is the right archetype for this ticket: a user cannot log in and the account may be locked.</p>
   <pre><code>/ha-debug User can't log in, alice@acme-isd.example.com</code></pre>
-  <p>The coordinator maps the symptom to <code>assemble-login-failure-case --email alice@acme-isd.example.com --window 24h</code> and queries DynamoDB, Cognito, and CloudWatch in parallel. The three fields that matter most for a lockout are <code>lockState.locked</code> (DynamoDB lock active?), <code>identity.cognitoStatus</code> (is the Cognito account healthy?), and <code>identity.auth0Blocked</code> (is Auth0 enforcing a lockout?). In practice, ha-debug typically runs alongside auth0-logs — together they form one case file. See the <a href={join('/tutorials/ha-debug/')}>ha-debug tutorial</a> for the full field reference.</p>
+  <p>The coordinator maps the symptom to <code>assemble-login-failure-case --email alice@acme-isd.example.com --window 24h</code> and queries DynamoDB, Cognito, and CloudWatch in parallel. The three fields that matter most for a lockout are <code>lockState.locked</code> (DynamoDB lock active?), <code>identity.cognitoStatus</code> (is the Cognito account healthy?), and <code>identity.auth0Blocked</code> (is Auth0 enforcing a lockout?). In practice, ha-debug typically runs alongside auth0-management's logs subcommand — together they form one case file. See the <a href={join('/tutorials/ha-debug/')}>ha-debug tutorial</a> for the full field reference.</p>
   <p><strong>What the operator now knows:</strong> whether the lock is at the Auth0 layer, the DynamoDB layer, the Cognito layer, or several at once. The coordinator's next routing decision — confirm whether Alice's DynamoDB authorization record for tenant <code>acme-isd</code> is still active.</p>
   <p><a href={join('/tutorials/ha-debug/')}>Read the ha-debug tutorial →</a></p>
 
@@ -142,8 +142,8 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
   <p><a href={join('/tutorials/kb-ingest/')}>Read the kb-ingest tutorial →</a></p>
 
   <h2 id="why-system">Why this is a system, not a list</h2>
-  <p>Throughout this walkthrough the engineer typed plain English to one agent — the coordinator. They never selected a skill, constructed a Lucene query, invoked a Python script, or looked up a DynamoDB table name. The coordinator interpreted the intent at each step and routed to the right specialist: auth0-logs for the event stream, auth0-sec for block state, ha-debug for the AWS-side case file, verify-user-authorization for the ERP authorization record, and kb-ingest to close the loop. The engineer's job was to read evidence and make decisions, not to manage tooling.</p>
-  <p>Each skill produced structured output — JSON envelopes with named fields — that the next skill consumed without copy-paste or manual reformatting. The <code>user_name</code> from auth0-logs became the subject for auth0-sec. The <code>lockState.locked</code> from ha-debug corroborated the Auth0 block. The <code>authorization.status</code> from verify-user-authorization confirmed whether the ERP record was consistent. No context was lost between steps; the chain preserved it.</p>
+  <p>Throughout this walkthrough the engineer typed plain English to one agent — the coordinator. They never selected a skill, constructed a Lucene query, invoked a Python script, or looked up a DynamoDB table name. The coordinator interpreted the intent at each step and routed to the right specialist: auth0-management's logs subcommand for the event stream, the sec subcommand for block state, ha-debug for the AWS-side case file, verify-user-authorization for the ERP authorization record, and kb-ingest to close the loop. The engineer's job was to read evidence and make decisions, not to manage tooling.</p>
+  <p>Each skill produced structured output — JSON envelopes with named fields — that the next skill consumed without copy-paste or manual reformatting. The <code>user_name</code> from auth0-management's logs subcommand became the subject for the sec subcommand. The <code>lockState.locked</code> from ha-debug corroborated the Auth0 block. The <code>authorization.status</code> from verify-user-authorization confirmed whether the ERP record was consistent. No context was lost between steps; the chain preserved it.</p>
   <p>The final step — kb-ingest — is what distinguishes a closed incident from a system that learns. The resolution write-up becomes a wiki source page, an entity, and a concept entry per Decision 0013's three-layer LLM-wiki pattern. The next on-call who encounters a similar failure at a school district will find that case in the wiki before they run a single command. That compounding return is the point: skills as a system, not a list.</p>
   <p>For the architectural detail behind the coordinator-plus-specialists model, the three-layer wiki, and the skill contract, see <a href={join('/how-it-works/')}>How it works</a>.</p>
 </ArticleLayout>

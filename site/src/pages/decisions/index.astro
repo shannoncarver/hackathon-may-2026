@@ -24,9 +24,10 @@ const decisions = [
   { n: '0011', slug: 'eval-harness-shape',                      title: 'Eval harness shape',                    summary: 'Inspect-AI framework; per-agent + e2e tests; code-quality judge rubric.' },
   { n: '0012', slug: 'rename-architecture-to-decisions',        title: 'Rename architecture to decisions',      summary: 'Rename `docs/architecture/` to `docs/decisions/` for clarity.' },
   { n: '0013', slug: 'karpathy-wiki-pattern',                   title: 'Karpathy three-layer wiki',             summary: 'Three-layer LLM-wiki: raw, wiki, SCHEMA. Supersedes 0004.' },
-  { n: '0014', slug: 'auth0-logs-skill',                        title: 'Auth0 logs skill',                      summary: 'Skill for querying Auth0 Management API logs; LINQ sandbox tenant only.' },
+  { n: '0014', slug: 'auth0-logs-skill',                        title: 'Auth0 logs skill (Superseded by 0025)', summary: 'Skill for querying Auth0 Management API logs; LINQ sandbox tenant only. Superseded by 0025.' },
   { n: '0015', slug: 'centralized-platform-mcp',                title: 'Centralized platform MCP',              summary: 'Single internal MCP server for LINQ products; Lambda + API Gateway.' },
   { n: '0016', slug: 'aws-multi-account-skill-credentials',     title: 'AWS multi-account skill credentials',   summary: 'Named profiles, env-derived defaults, prod-acknowledgment guard, sts audit banner.' },
+  { n: '0025', slug: 'auth0-management-merge',                  title: 'Auth0 Management skill (merged)',       summary: 'Single skill consolidating auth0-logs, auth0-stats, and auth0-sec into one unified slash command with three subcommands. Preserves the AuthProvider seam from Decision 0014 for future centralized-platform migration.' },
 ];
 
 const items = decisions.map((d) => ({
@@ -40,7 +41,7 @@ const items = decisions.map((d) => ({
 <ArticleLayout
   title="Decisions"
   eyebrow="Architecture decision records"
-  lede="Sixteen decisions captured during the hackathon — each links to its source markdown. Filtering by status and category lands in v2."
+  lede="Seventeen decisions captured during the hackathon — each links to its source markdown. Filtering by status and category lands in v2."
   breadcrumb={[{ label: 'Home', href: join('/') }, { label: 'Decisions' }]}
 >
   <Callout variant="info" label="Source of truth">

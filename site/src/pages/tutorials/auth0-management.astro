@@ -1,0 +1,238 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import Callout from '../../components/Callout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
+---
+
+<ArticleLayout
+  title="auth0-management"
+  description="Unified Auth0 Management API skill — query log events, tenant health stats, and security inspection from a single slash command."
+  eyebrow="Tutorial"
+  lede="After this page you will be able to pick the right Auth0 Management subcommand for any question — events, aggregates, or security posture — and read the response confidently against the LINQ sandbox tenant."
+  breadcrumb={[
+    { label: 'Home', href: join('/') },
+    { label: 'Tutorials', href: join('/tutorials/') },
+    { label: 'auth0-management' },
+  ]}
+>
+  <Callout variant="info" label="TL;DR">
+    <ul>
+      <li><strong><code>logs</code></strong> — Lucene-query Auth0 events (login attempts, failures, MFA events, account changes).</li>
+      <li><strong><code>stats</code></strong> — tenant health snapshot over a time window (daily volume, MAU, failure rate, MFA adoption, top connections).</li>
+      <li><strong><code>sec</code></strong> — security inspection by subject (IP, email, user_id, or "policy" / "status" keywords).</li>
+      <li><strong><code>clients</code></strong> — list or get Auth0 application configuration (callbacks, grant types, connections, allowed origins). Read-only; never returns <code>client_secret</code>.</li>
+      <li><strong><code>user</code></strong> — fetch a specific Auth0 user record by email or user_id (exists, blocked, identities, MFA, last login).</li>
+    </ul>
+  </Callout>
+
+  <h2 id="when-to-use">When to use this skill</h2>
+  <p>The <code>auth0-management</code> skill consolidates five subcommands behind one slash command and one CLI. Pick the subcommand from the user's intent:</p>
+  <table>
+    <thead>
+      <tr><th>User asks about</th><th>Subcommand</th><th>What it returns</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Specific events / failures / login attempts</td><td><a href="#logs"><code>logs</code></a></td><td>Raw Auth0 log entries via Lucene query</td></tr>
+      <tr><td>Aggregate health / MAU / failure rate / MFA adoption</td><td><a href="#stats"><code>stats</code></a></td><td>Tenant-wide metrics over a time window</td></tr>
+      <tr><td>Block status / attack-protection policy / per-subject security</td><td><a href="#sec"><code>sec</code></a></td><td>IP block status, user-blocks, or attack-protection configs</td></tr>
+      <tr><td>App-client (application) config — callbacks, grant types, connections</td><td><a href="#clients"><code>clients</code></a></td><td>Auth0 application records, safe field projection (never <code>client_secret</code>)</td></tr>
+      <tr><td>A specific Auth0 user record — exists, blocked, identities, MFA, last login</td><td><a href="#user"><code>user</code></a></td><td>Auth0 user record by email or user_id</td></tr>
+    </tbody>
+  </table>
+  <p>For per-user investigation across Cognito and DynamoDB, use <a href={join('/tutorials/ha-debug/')}>ha-debug</a>. For ERP authorization checks, use <code>verify-user-authorization</code>. This skill is read-only and sandbox-only — Auth0 configuration changes, production-tenant queries, and real-time alerting all lie outside its scope.</p>
+
+  <h2 id="prerequisites">Prerequisites</h2>
+  <Callout variant="warn" label="Missing scopes">
+    If the script exits with <code>auth_failed</code> and the hint mentions "scope," the M2M app is missing one or more of the required scopes below. See <code>docs/developer/onboarding.md</code> for the upgrade path.
+  </Callout>
+  <ul>
+    <li><strong><code>AUTH0_DOMAIN</code></strong>, <strong><code>AUTH0_CLIENT_ID</code></strong>, <strong><code>AUTH0_CLIENT_SECRET</code></strong> — set in <code>.env</code> at the repo root. The script loads <code>.env</code> itself via the shared <code>load_dotenv</code> helper.</li>
+    <li><strong>Required M2M scopes:</strong> <code>read:logs</code>, <code>read:stats</code>, <code>read:anomaly_blocks</code>, <code>read:attack_protection</code>, <code>read:users</code>, and <code>read:clients</code> on the LINQ sandbox tenant.</li>
+    <li><strong>First-time setup:</strong> <code>cp .env.example .env</code>, fill in credentials, then verify scopes are granted in the Auth0 Dashboard. See <code>docs/developer/onboarding.md</code>.</li>
+  </ul>
+
+  <h2 id="logs">Subcommand: <code>logs</code></h2>
+  <p>Reach for <code>logs</code> when a stakeholder or engineer asks about specific authentication events — failed logins, lockouts, MFA failures, or per-user activity. The skill maps failure descriptions to Auth0 event type codes (<code>fp</code> for wrong password, <code>fu</code> for invalid username, <code>limit_wc</code> for blocked accounts) and computes literal date ranges from your request.</p>
+
+  <h3>Quick examples</h3>
+  <ul>
+    <li><code>/auth0-management logs show me failed logins in the last 24 hours</code></li>
+    <li><code>/auth0-management logs verify scarver@linq.com can authenticate with auth0</code></li>
+    <li><code>/auth0-management logs wrong password attempts this week</code></li>
+  </ul>
+
+  <h3>CLI flags</h3>
+  <pre><code>{`python .claude/skills/auth0-management/scripts/auth0_management.py logs \\
+  --query 'type:(fp OR fu) AND date:[2026-05-05 TO *]' \\
+  --max-pages 5 \\
+  --sort 'date:-1' \\
+  --fields _id,type,ip,user_name`}</code></pre>
+  <ul>
+    <li><strong><code>--query</code></strong> — Lucene query string. Field names are case-sensitive; pipes must be escaped; <code>AND</code>/<code>OR</code>/<code>NOT</code> uppercase.</li>
+    <li><strong><code>--max-pages</code></strong> — page cap (default 5 = up to 500 events).</li>
+    <li><strong><code>--sort</code></strong> — defaults to <code>date:-1</code> (newest first).</li>
+    <li><strong><code>--fields</code></strong> — comma-separated projection.</li>
+  </ul>
+
+  <h3>Output shape</h3>
+  <p>The envelope carries <code>query</code>, <code>sort</code>, <code>total</code> (matched), <code>fetched</code> (retrieved across pages), <code>pages_fetched</code>, a <code>capped</code> flag with <code>capped_reason</code>, and the <code>logs</code> array.</p>
+
+  <h3>Common errors</h3>
+  <ul>
+    <li><code>missing_env</code> (1), <code>auth_failed</code> (2) — credential/scope problems; read the <code>hint</code> field.</li>
+    <li><code>bad_query</code> (3) — Lucene syntax error; review <code>references/lucene-query-guide.md</code>.</li>
+    <li><code>rate_limited</code> (4) — narrow the query or wait.</li>
+    <li><code>uri_too_large</code> (6) — query string too long; fewer <code>OR</code> clauses or a shorter date range.</li>
+  </ul>
+
+  <h2 id="stats">Subcommand: <code>stats</code></h2>
+  <p>Reach for <code>stats</code> when a stakeholder asks for a tenant-level view — "auth health," "login volume," "MAU," "failure rate this week," "MFA adoption," "top connections." It is the right starting point for a demo or weekly health check; stakeholder-friendly aggregates rather than engineer-on-call triage.</p>
+
+  <h3>Quick examples</h3>
+  <ul>
+    <li><code>/auth0-management stats this week</code></li>
+    <li><code>/auth0-management stats today</code></li>
+    <li><code>/auth0-management stats last 30 days</code></li>
+  </ul>
+
+  <h3>CLI flags</h3>
+  <pre><code>{`python .claude/skills/auth0-management/scripts/auth0_management.py stats \\
+  --window this-week \\
+  --include daily,mau,failures,mfa-adoption,top-connections`}</code></pre>
+  <ul>
+    <li><strong><code>--window</code></strong> — one of <code>today</code>, <code>yesterday</code>, <code>this-week</code>, <code>24h</code>, <code>7d</code>, <code>14d</code>, <code>30d</code>, <code>90d</code>, or any <code>NNd</code> form.</li>
+    <li><strong><code>--include</code></strong> — comma-separated section subset (e.g., <code>--include failures,mfa-adoption</code>).</li>
+    <li><strong><code>--exclude</code></strong> — drop specific sections (e.g., <code>--exclude mau</code>). Sections: <code>daily</code>, <code>mau</code>, <code>failures</code>, <code>mfa-adoption</code>, <code>top-connections</code>.</li>
+  </ul>
+
+  <h3>Output shape</h3>
+  <p>The envelope carries <code>window</code>, <code>generated_at</code>, and one key per requested section — <code>daily</code>, <code>mau</code>, <code>failures</code>, <code>mfa_adoption</code>, <code>top_connections</code> — with a <code>capped</code> flag on any section that hit Auth0's 1,000-result ceiling.</p>
+
+  <h3>Common errors</h3>
+  <ul>
+    <li><code>missing_env</code> (1), <code>auth_failed</code> (2) — credential/scope problems.</li>
+    <li><code>bad_window</code> (7) — <code>--window</code> not recognized; use one of the values above.</li>
+    <li><code>rate_limited</code> (4), <code>api_error</code> (5) — wait and retry, or check the Auth0 status page.</li>
+  </ul>
+
+  <h2 id="sec">Subcommand: <code>sec</code></h2>
+  <p>Reach for <code>sec</code> when an engineer or support analyst needs to understand security posture at a point in time — "is this IP blocked," "is user X locked out," "what's our brute-force policy," "breached-password policy," "suspicious IP throttling." The skill classifies the subject (IPv4/IPv6, email, IdP-prefixed user_id, or the keyword <code>policy</code> / <code>status</code>) and queries the matching anomaly-detection or attack-protection endpoints.</p>
+
+  <h3>Quick examples</h3>
+  <ul>
+    <li><code>/auth0-management sec policy</code></li>
+    <li><code>/auth0-management sec 1.2.3.4</code></li>
+    <li><code>/auth0-management sec dain.kasprak@linq.com</code></li>
+  </ul>
+
+  <h3>CLI flags</h3>
+  <pre><code>{`python .claude/skills/auth0-management/scripts/auth0_management.py sec \\
+  --subject 1.2.3.4 \\
+  --days 7`}</code></pre>
+  <ul>
+    <li><strong><code>--subject</code></strong> — IPv4/IPv6, email, IdP-prefixed user_id (<code>auth0|...</code>), or one of <code>policy</code>, <code>status</code>, <code>posture</code>.</li>
+    <li><strong><code>--days</code></strong> — recent-activity window for IP subjects (default 7).</li>
+  </ul>
+
+  <h3>Output shape</h3>
+  <p>The envelope shape varies by subject kind. For an IP it carries <code>subject</code>, <code>subject_kind</code>, a <code>block</code> object with a <code>blocked</code> boolean, and a <code>recent_activity</code> object with breakdown and top_users. For policy it carries one object per attack-protection endpoint (breached-password, brute-force, suspicious-IP throttling) with <code>enabled</code> and threshold fields.</p>
+
+  <h3>Common errors</h3>
+  <ul>
+    <li><code>missing_env</code> (1), <code>auth_failed</code> (2) — credential/scope problems; the M2M app may be missing <code>read:anomaly_blocks</code>, <code>read:attack_protection</code>, or <code>read:users</code>.</li>
+    <li><code>bad_subject</code> (8) — subject classification failed; supported types are IPv4, IPv6, email, IdP-prefixed user_id, and the keywords <code>policy</code>, <code>status</code>, <code>posture</code>.</li>
+    <li><code>rate_limited</code> (4), <code>api_error</code> (5) — wait and retry, or check the Auth0 status page.</li>
+  </ul>
+
+  <h2 id="clients">Subcommand: <code>clients</code></h2>
+  <p>Reach for <code>clients</code> when you need to inspect Auth0 application configuration without touching the Auth0 Dashboard — verifying callback URLs, grant types, allowed origins, refresh-token settings, or whether an app is first-party. Useful when investigating a misconfigured login flow, auditing CORS posture, or confirming an ERP product's tenant settings.</p>
+
+  <h3>Quick examples</h3>
+  <ul>
+    <li><code>/auth0-management clients --name "ERP V4"</code></li>
+    <li><code>/auth0-management clients --client-id &lt;id&gt;</code></li>
+    <li><code>/auth0-management clients --app-type spa --is-first-party true</code></li>
+  </ul>
+
+  <h3>CLI flags</h3>
+  <pre><code>{`python .claude/skills/auth0-management/scripts/auth0_management.py clients \\
+  --name "ERP V4" \\
+  --app-type spa \\
+  --is-first-party true`}</code></pre>
+  <ul>
+    <li><strong><code>--name</code></strong> — case-insensitive substring match on client name (e.g., <code>"ERP V4"</code>, <code>"LINQ ERP"</code>).</li>
+    <li><strong><code>--client-id</code></strong> — fetch a single client by <code>client_id</code>. Mutually exclusive in effect with <code>--name</code>.</li>
+    <li><strong><code>--app-type</code></strong> — server-side filter: <code>spa</code>, <code>regular_web</code>, <code>native</code>, or <code>non_interactive</code>.</li>
+    <li><strong><code>--is-first-party</code></strong> — server-side filter: <code>true</code> or <code>false</code>. Omit for no filter.</li>
+    <li><strong><code>--fields</code></strong> — comma-separated projection. Defaults to a verification-relevant set; <code>client_secret</code>, <code>signing_keys</code>, and <code>encryption_key</code> are always rejected.</li>
+    <li><strong><code>--per-page</code></strong>, <strong><code>--max-pages</code></strong> — pagination controls for listing.</li>
+  </ul>
+
+  <h3>Output shape</h3>
+  <p>The envelope carries <code>clients</code> (an array of application records) with the default projection: <code>client_id</code>, <code>name</code>, <code>app_type</code>, <code>grant_types</code>, <code>callbacks</code>, <code>allowed_logout_urls</code>, <code>web_origins</code>, <code>allowed_origins</code>, <code>initiate_login_uri</code>, <code>jwt_configuration</code>, <code>refresh_token</code>, <code>sso</code>, <code>cross_origin_authentication</code>, <code>custom_login_page_on</code>, <code>is_first_party</code>, <code>oidc_conformant</code>, <code>token_endpoint_auth_method</code>, and <code>tenant</code>. The skill refuses to project <code>client_secret</code>, <code>signing_keys</code>, or <code>encryption_key</code> by design — credential material has no operational use here. Rotate via the Auth0 Dashboard.</p>
+
+  <h3>Common errors</h3>
+  <ul>
+    <li><code>missing_env</code> (1), <code>auth_failed</code> (2) — credential/scope problems; the M2M app may be missing <code>read:clients</code>.</li>
+    <li><code>rate_limited</code> (4), <code>api_error</code> (5) — wait and retry, or check the Auth0 status page.</li>
+  </ul>
+
+  <h2 id="user">Subcommand: <code>user</code></h2>
+  <p>Reach for <code>user</code> when a stakeholder or support analyst needs a specific Auth0 user record — does the user exist, are they blocked, which identities are linked, is MFA enrolled, and when did they last log in. Pair with <code>logs</code> or <code>ha-debug</code> for behavioral context; this subcommand returns the static record only.</p>
+
+  <h3>Quick examples</h3>
+  <ul>
+    <li><code>/auth0-management user --email scarver@linq.com</code></li>
+    <li><code>/auth0-management user --user-id auth0|123456</code></li>
+    <li><code>/auth0-management user --email dain.kasprak@linq.com</code></li>
+  </ul>
+
+  <h3>CLI flags</h3>
+  <pre><code>{`python .claude/skills/auth0-management/scripts/auth0_management.py user \\
+  --email scarver@linq.com`}</code></pre>
+  <ul>
+    <li><strong><code>--email</code></strong> — email address (case-insensitive). Hits <code>/api/v2/users-by-email</code> and returns a list (Auth0 supports duplicates across connections).</li>
+    <li><strong><code>--user-id</code></strong> — Auth0 <code>user_id</code> (e.g., <code>auth0|abc123</code>). Hits <code>/api/v2/users/&#123;id&#125;</code> and returns a single object.</li>
+    <li><strong><code>--fields</code></strong> — comma-separated projection. Defaults to a verification-relevant set; <code>password_hash</code> and other credential fields are always refused.</li>
+  </ul>
+
+  <h3>Output shape</h3>
+  <p>The envelope carries the user record (or list of records for email lookup) with the default projection: <code>user_id</code>, <code>email</code>, <code>email_verified</code>, <code>blocked</code>, <code>name</code>, <code>nickname</code>, <code>picture</code>, <code>identities</code>, <code>multifactor</code>, <code>last_login</code>, <code>last_ip</code>, <code>logins_count</code>, <code>created_at</code>, <code>updated_at</code>, <code>app_metadata</code>, and <code>user_metadata</code>. This covers identities, MFA enrollment, last login, and blocked status. The skill refuses to project <code>password_hash</code>, <code>phone_password_hash</code>, <code>last_password_reset</code>, or <code>guardian_authenticators</code>.</p>
+
+  <h3>Common errors</h3>
+  <ul>
+    <li><code>missing_env</code> (1), <code>auth_failed</code> (2) — credential/scope problems; the M2M app may be missing <code>read:users</code>.</li>
+    <li><code>api_error</code> (5) — generic 4xx/5xx (e.g., 404 for an unknown <code>user_id</code>). Surface verbatim.</li>
+    <li><code>rate_limited</code> (4) — wait and retry.</li>
+  </ul>
+
+  <h2 id="follow-ups">Cross-skill follow-ups</h2>
+  <table>
+    <thead>
+      <tr><th>Finding</th><th>Next slash command</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>IP currently blocked, want details</td><td><code>/auth0-management logs ip:"&lt;ip&gt;"</code></td></tr>
+      <tr><td>Policy enabled, want to see how often it fires</td><td><code>/auth0-management stats failures</code></td></tr>
+      <tr><td>User blocked, want full state across systems</td><td><code>ha-debug get-user --email &lt;addr&gt;</code></td></tr>
+      <tr><td>Want to inspect an app's allowed origins or callbacks</td><td><code>/auth0-management clients --client-id &lt;id&gt;</code></td></tr>
+      <tr><td>User reports login issue, want their Auth0 record</td><td><code>/auth0-management user --email &lt;addr&gt;</code></td></tr>
+      <tr><td>Tenant looks fine, want pattern detection</td><td><code>/auth0-analytics</code> (Phase 5 — deferred)</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="where-this-fits">Where this fits</h2>
+  <ul>
+    <li><strong>Pillar:</strong> <a href={join('/how-it-works/')}>Skills management</a></li>
+    <li><strong>Standing decision:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0025-auth0-management-merge.md">0025 — Auth0 management merge</a>. Decisions <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0014-auth0-logs-skill.md">0014</a>, <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0019-auth0-stats-skill.md">0019</a>, and <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/docs/decisions/0020-auth0-sec-skill.md">0020</a> are superseded by 0025; the AuthProvider seam from 0014 is preserved unchanged.</li>
+    <li><strong>Skill:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/auth0-management/SKILL.md"><code>.claude/skills/auth0-management/SKILL.md</code></a></li>
+    <li><strong>Script:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/auth0-management/scripts/auth0_management.py"><code>.claude/skills/auth0-management/scripts/auth0_management.py</code></a></li>
+    <li><strong>References:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/auth0-management/references/auth0-event-codes.md"><code>auth0-event-codes.md</code></a>, <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/auth0-management/references/lucene-query-guide.md"><code>lucene-query-guide.md</code></a>, <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/auth0-management/references/health-metrics.md"><code>health-metrics.md</code></a>, <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/skills/auth0-management/references/attack-protection-glossary.md"><code>attack-protection-glossary.md</code></a></li>
+    <li><strong>Slash command:</strong> <a href="https://github.com/shannoncarver/hackathon-may-2026/blob/main/.claude/commands/auth0-management.md"><code>.claude/commands/auth0-management.md</code></a></li>
+  </ul>
+
+  <h2 id="next">Try the next skill</h2>
+  <p>When a security finding points at a specific user, hand off to <a href={join('/tutorials/ha-debug/')}>ha-debug</a> for full per-user state across Cognito and DynamoDB — account metadata, connection details, and recent session history in one case file.</p>
+</ArticleLayout>
