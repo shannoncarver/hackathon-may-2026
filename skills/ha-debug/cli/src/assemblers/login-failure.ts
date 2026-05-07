@@ -1,4 +1,4 @@
-import { HaDebugAuth0Client } from '../clients/auth0';
+import { HaDebugAuth0Client, Auth0LogEntry } from '../clients/auth0';
 import { HaDebugCognitoClient } from '../clients/cognito';
 import { HaDebugDynamoDBClient } from '../clients/dynamodb';
 import { HaDebugCloudWatchClient } from '../clients/cloudwatch';
@@ -22,6 +22,7 @@ export interface LoginFailureCaseFile {
     timestamp: string;
     message: string;
   }>;
+  auth0Logs: Auth0LogEntry[];
   windowMs: number;
   assembledAt: string;
 }
@@ -38,14 +39,18 @@ export async function assembleLoginFailureCase(
   const identity = await resolveSubject(emailOrUserId, auth0, cognito);
   const lookupId = identity.auth0Id ?? emailOrUserId;
 
-  const [lock, cwLogs, appClient] = await Promise.allSettled([
+  const [lock, cwLogs, auth0Logs, appClient] = await Promise.allSettled([
     ddb.getLockRecord(lookupId),
     cw.queryAuthLogs(identity.email ?? emailOrUserId, windowMs, 50).catch(() => []),
+    identity.auth0Id
+      ? auth0.getUserLogsByWindow(identity.auth0Id, windowMs).catch(() => [])
+      : Promise.resolve([]),
     opts.clientId ? ddb.getAppClient(opts.clientId) : Promise.resolve(undefined),
   ]);
 
   const lockData = lock.status === 'fulfilled' ? lock.value : undefined;
   const cwData = cwLogs.status === 'fulfilled' ? cwLogs.value : [];
+  const auth0LogData = auth0Logs.status === 'fulfilled' ? (auth0Logs.value as Auth0LogEntry[]) : [];
   const appClientData = appClient.status === 'fulfilled' ? appClient.value : undefined;
 
   return {
@@ -68,6 +73,7 @@ export async function assembleLoginFailureCase(
       timestamp: l.timestamp,
       message: l.message,
     })),
+    auth0Logs: auth0LogData,
     windowMs,
     assembledAt: new Date().toISOString(),
   };
