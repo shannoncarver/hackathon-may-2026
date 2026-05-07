@@ -13,7 +13,8 @@
       "Bash(pytest:*)",
       "Bash(python .claude/skills/auth0-logs/scripts/auth0_logs.py:*)",
       "Bash(python .claude/skills/auth0-stats/scripts/auth0_stats.py:*)",
-      "Bash(python .claude/skills/auth0-sec/scripts/auth0_sec.py:*)"
+      "Bash(python .claude/skills/auth0-sec/scripts/auth0_sec.py:*)",
+      "Bash(python .claude/skills/auth0-management/scripts/auth0_management.py:*)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
