@@ -1,22 +1,24 @@
 ---
 name: auth0-management
-description: Operational protocol for Auth0 Management API queries on the LINQ sandbox tenant — log events, tenant health stats, and security inspection. Use when running the /auth0-management slash command, when a user says "show me failed logins", "auth0 logs", "authentication failures", "who got locked out", "verify user can authenticate", "can this user authenticate with auth0", "check auth0 authentication for [user]", "verify auth0 setup", "auth0 health", "login volume", "MAU", "monthly active users", "failure rate this week", "MFA adoption", "top connections", "is this IP blocked", "is user X locked out", "what's our brute-force policy", "breached-password policy", "suspicious IP throttling", "auth0 security posture", "is this user set up correctly", or when investigating auth-related incidents, verifying authentication activity, or auditing security configuration on the LINQ sandbox tenant.
+description: Operational protocol for Auth0 Management API queries on the LINQ sandbox tenant — log events, tenant health stats, security inspection, application (client) configuration, and per-user identity records. Use when running the /auth0-management slash command, when a user says "show me failed logins", "auth0 logs", "authentication failures", "who got locked out", "verify user can authenticate", "can this user authenticate with auth0", "check auth0 authentication for [user]", "verify auth0 setup", "auth0 health", "login volume", "MAU", "monthly active users", "failure rate this week", "MFA adoption", "top connections", "is this IP blocked", "is user X locked out", "what's our brute-force policy", "breached-password policy", "suspicious IP throttling", "auth0 security posture", "is this user set up correctly", "look up the auth0 user record", "ERP V4 client config", "show me the application callbacks", "verify the auth0 app client", or when investigating auth-related incidents, verifying authentication activity, or auditing security or app-client configuration on the LINQ sandbox tenant.
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
 # auth0-management skill
 
-Unified successor to `auth0-logs`, `auth0-stats`, and `auth0-sec`. Standing decision is [Decision 0025](../../../docs/decisions/0025-auth0-management-merge.md); the AuthProvider seam from [Decision 0014](../../../docs/decisions/0014-auth0-logs-skill.md) is preserved unchanged. The script lives at [`scripts/auth0_management.py`](scripts/auth0_management.py) with three subcommands — `logs`, `stats`, `sec` — sharing one CLI, one auth seam, and one error envelope.
+Unified successor to `auth0-logs`, `auth0-stats`, and `auth0-sec`, extended to also cover application config and per-user identity records. Standing decision is [Decision 0025](../../../docs/decisions/0025-auth0-management-merge.md); the AuthProvider seam from [Decision 0014](../../../docs/decisions/0014-auth0-logs-skill.md) is preserved unchanged. The script lives at [`scripts/auth0_management.py`](scripts/auth0_management.py) with five subcommands — `logs`, `stats`, `sec`, `clients`, `user` — sharing one CLI, one auth seam, and one error envelope.
 
 ## Subcommand selection
 
-The skill has three subcommands. Pick based on the user's intent:
+The skill has five subcommands. Pick based on the user's intent:
 
 | User asks about | Subcommand | What it returns |
 |----------------|------------|-----------------|
 | Specific events / failures / login attempts | `logs` | Raw Auth0 log entries via Lucene query |
 | Aggregate health / MAU / failure rate / MFA adoption | `stats` | Tenant-wide metrics over a time window |
 | Block status / attack-protection policy / per-subject security | `sec` | IP block status, user-blocks, or attack-protection configs |
+| App-client (application) config — callbacks, grant types, connections | `clients` | Auth0 application records, safe field projection (never client_secret) |
+| A specific Auth0 user record — exists, blocked, identities, MFA, last login | `user` | Auth0 user record by email or user_id |
 
 **Edge cases:**
 - "Verify user can authenticate" → `logs` (with user_name filter)
@@ -51,6 +53,23 @@ Subcommand selection per the table above. Then read the appropriate reference fi
 
 - Classify `--subject`: IPv4/IPv6 → IP path; `<addr>@...` → email path; `auth0|...` (or other IdP-prefixed) → user_id path; `policy / config / settings` → all three attack-protection endpoints; `status / posture / overview` (or empty) → status summary.
 - For IP subjects, optionally pass `--days N` to widen the recent-activity window (default 7).
+
+**`clients`** — Auth0 application config via `/api/v2/clients`.
+
+- For named lookup (most common): pass `--name "<substr>"` to filter the listing by name (case-insensitive). The substring matches against the `name` field — useful for `"ERP V4"`, `"LINQ ERP"`, etc.
+- For direct lookup: pass `--client-id <id>`.
+- Optional server-side filters: `--app-type spa|regular_web|native|non_interactive`, `--is-first-party true|false`.
+- The default field projection covers the verification-relevant set: `client_id, name, app_type, grant_types, callbacks, allowed_logout_urls, web_origins, allowed_origins, initiate_login_uri, jwt_configuration, refresh_token, sso, cross_origin_authentication, custom_login_page_on, is_first_party, oidc_conformant, token_endpoint_auth_method, tenant`. Override with `--fields a,b,c` if needed.
+- The skill **refuses** to project `client_secret`, `signing_keys`, or `encryption_key` — credential material has no operational use here. Use the Auth0 Dashboard for rotation.
+- Required scope: `read:clients`. On 403/scope error, the existing `auth_failed` hint covers next steps.
+
+**`user`** — Auth0 user record via `/api/v2/users-by-email` or `/api/v2/users/{id}`.
+
+- For email lookup (most common): `--email <addr>`. Returns a list (Auth0 supports duplicates across connections).
+- For user_id lookup: `--user-id 'auth0|...'`. Returns a single object.
+- The default field projection: `user_id, email, email_verified, blocked, name, nickname, picture, identities, multifactor, last_login, last_ip, logins_count, created_at, updated_at, app_metadata, user_metadata`.
+- The skill **refuses** to project `password_hash`, `phone_password_hash`, `last_password_reset`, or `guardian_authenticators`.
+- Required scope: `read:users`.
 
 ### Step 2 — Execute
 
