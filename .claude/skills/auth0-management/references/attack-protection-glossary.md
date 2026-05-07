@@ -1,6 +1,6 @@
 # Auth0 Attack Protection—Glossary and Baselines
 
-What each `/auth0-sec` policy field means in plain language, what counts as a healthy posture, and what to drill into when something looks off.
+What each `/auth0-management sec` policy field means in plain language, what counts as a healthy posture, and what to drill into when something looks off.
 
 ## Breached Password Detection
 
@@ -25,7 +25,7 @@ Auth0 cross-references login passwords against known credential-breach corpuses 
 
 ### Drill-down
 
-If a user logged in with a breached credential, `/auth0-logs type:pwd_leak` shows the events. Then `ha-debug get-user --email <user>` for state and contact info.
+If a user logged in with a breached credential, `/auth0-management logs type:pwd_leak` shows the events. Then `ha-debug get-user --email <user>` for state and contact info.
 
 ## Brute Force Protection
 
@@ -52,7 +52,7 @@ Tracks repeated failed logins from the same user account. After a threshold, blo
 
 ### Drill-down
 
-If `enabled: false`, that's a real finding—escalate to eng-security-iam. If `max_attempts > 20`, ask whether the relaxed threshold is intentional. The `/auth0-logs type:limit_mu` query shows recent brute-force blocks.
+If `enabled: false`, that's a real finding—escalate to eng-security-iam. If `max_attempts > 20`, ask whether the relaxed threshold is intentional. The `/auth0-management logs type:limit_mu` query shows recent brute-force blocks.
 
 ## Suspicious IP Throttling
 
@@ -79,13 +79,13 @@ Tracks failed logins by IP across all users. Catches credential-stuffing attempt
 
 ### Drill-down
 
-If you see this policy disabled, treat as a real finding—credential-stuffing protection is the table-stakes baseline. The `/auth0-logs type:limit_wc OR type:limit_sul` query shows IPs being throttled.
+If you see this policy disabled, treat as a real finding—credential-stuffing protection is the table-stakes baseline. The `/auth0-management logs type:limit_wc OR type:limit_sul` query shows IPs being throttled.
 
 ## IP Block (anomaly endpoint)
 
 **Source:** `GET /api/v2/anomaly/blocks/ips/{ip}`
 
-This is per-IP, not policy. Returns 200 with details if the IP is currently blocked by suspicious-IP throttling, or 404 if not blocked. The `/auth0-sec` script handles both responses cleanly and surfaces a boolean `blocked` field.
+This is per-IP, not policy. Returns 200 with details if the IP is currently blocked by suspicious-IP throttling, or 404 if not blocked. The `/auth0-management sec` script handles both responses cleanly and surfaces a boolean `blocked` field.
 
 ### What "currently blocked" means
 
@@ -95,7 +95,7 @@ The IP hit the suspicious-IP-throttling threshold in a recent window. Auth0 will
 
 ### Drill-down
 
-If an IP shows `blocked: true`, run `/auth0-logs ip:"<ip>"` to see the underlying events and decide whether the block is correct or a false positive (e.g., a shared-NAT egress).
+If an IP shows `blocked: true`, run `/auth0-management logs ip:"<ip>"` to see the underlying events and decide whether the block is correct or a false positive (e.g., a shared-NAT egress).
 
 ## User Blocks (per-user lockout state)
 
@@ -113,9 +113,9 @@ If a user reports "I can't log in," check this first. If `blocked_for` is non-em
 
 ## Cross-skill follow-ups
 
-| `/auth0-sec` finding | Next slash command |
+| `/auth0-management sec` finding | Next slash command |
 |---------------------|--------------------|
-| IP currently blocked, want details | `/auth0-logs ip:"<ip>"` |
-| Policy enabled but you want to see how often it fires | `/auth0-stats failures` (failure breakdown) |
+| IP currently blocked, want details | `/auth0-management logs ip:"<ip>"` |
+| Policy enabled but you want to see how often it fires | `/auth0-management stats failures` (failure breakdown) |
 | User blocked, want full state across systems | `ha-debug get-user --email <addr>` |
 | Tenant looks fine, want pattern detection | `/auth0-analytics` (Phase 5) |
