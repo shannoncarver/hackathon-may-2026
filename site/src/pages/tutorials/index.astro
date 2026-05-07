@@ -7,25 +7,11 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
 
 const tutorials = [
   {
-    href: join('/tutorials/auth0-logs/'),
+    href: join('/tutorials/auth0-management/'),
     pillar: 'Skill · Identity',
     status: 'shipped' as const,
-    title: 'auth0-logs',
-    summary: 'Query the LINQ sandbox Auth0 tenant in plain English. Translates your prompt into a Lucene query and returns recent authentication events.',
-  },
-  {
-    href: join('/tutorials/auth0-sec/'),
-    pillar: 'Skill · Identity',
-    status: 'shipped' as const,
-    title: 'auth0-sec',
-    summary: 'Inspect a subject — IP, user, or tenant-wide policy — and surface block state, lockouts, and attack-protection configuration.',
-  },
-  {
-    href: join('/tutorials/auth0-stats/'),
-    pillar: 'Skill · Identity',
-    status: 'shipped' as const,
-    title: 'auth0-stats',
-    summary: 'Tenant health dashboard by natural-language window: daily volume, MAU, failure rate, MFA adoption, top connections.',
+    title: 'auth0-management',
+    summary: 'Unified Auth0 Management API skill — log events, tenant health, and security inspection.',
   },
   {
     href: join('/tutorials/ha-debug/'),

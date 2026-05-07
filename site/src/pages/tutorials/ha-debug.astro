@@ -31,7 +31,7 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
     a user was not prompted for MFA, or you need to inspect a JWT that was rejected downstream. The skill
     covers the AWS and Harmony-Auth side of the investigation — DynamoDB lock state, MFA enrollment,
     app-client configuration, CloudWatch Lambda logs, and Cognito user status. Auth0 event logs are
-    complementary; run <code>/auth0-logs</code> alongside <code>assemble-login-failure-case</code> to get
+    complementary; run <code>/auth0-management logs</code> alongside <code>assemble-login-failure-case</code> to get
     the Auth0 event stream.
   </p>
   <p>
@@ -94,7 +94,7 @@ const join = (path: string) => `${baseUrl.replace(/\/$/, '')}${path}`;
     </li>
     <li>
       <p><strong>Common follow-ups.</strong> If Auth0 event codes or per-attempt failure descriptions are needed, run
-        <code>/auth0-logs</code> with the same email and window. Once the root cause is confirmed, persist
+        <code>/auth0-management logs</code> with the same email and window. Once the root cause is confirmed, persist
         the case with <code>write-resolved-case</code> (see below) and then verify whether the affected
         user is authorized in the ERP tenant using
         <a href={join('/tutorials/verify-user-authorization/')}>verify-user-authorization</a>.
