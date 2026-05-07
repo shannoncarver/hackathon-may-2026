@@ -22,6 +22,7 @@ The skill has three subcommands. Pick based on the user's intent:
 - "Verify user can authenticate" → `logs` (with user_name filter)
 - "Is this IP blocked AND why" → `sec` (block check) followed by `logs ip:"..."` if needed
 - "Audit auth0 setup" → `sec --subject policy` (config) + `stats --window 30d` (recent activity)
+- "MFA failures from IP X this week" → `logs` (specific events with ip + type filter; not stats — stats gives the adoption ratio, not per-IP events)
 
 ## Three-step protocol
 

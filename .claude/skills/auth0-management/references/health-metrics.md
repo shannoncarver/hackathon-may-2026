@@ -1,6 +1,6 @@
 # Auth0 Health Metrics—Reference
 
-What each section of `/auth0-stats` measures, what counts as a healthy baseline, and what to drill into when something looks off. The skill produces these as part of its summary.
+What each section of `/auth0-management stats` measures, what counts as a healthy baseline, and what to drill into when something looks off. The skill produces these as part of its summary.
 
 ## `daily`—daily volume time series
 
@@ -14,7 +14,7 @@ What each section of `/auth0-stats` measures, what counts as a healthy baseline,
 - **Signups:** zero on most days for an internal sandbox is normal. Sudden non-zero signups during a quiet period are worth a glance.
 - **Breached-password detections:** zero is the healthy baseline. Any non-zero entry means a user attempted login with a credential that's appeared in a known breach corpus—flag the user via `ha-debug get-user --email`.
 
-**Drill-down:** if a day looks anomalous, run `/auth0-logs --window <date>` to see the raw events.
+**Drill-down:** if a day looks anomalous, run `/auth0-management logs --window <date>` to see the raw events.
 
 ## `mau`—monthly active users (rolling 30 days)
 
@@ -42,7 +42,7 @@ What each section of `/auth0-stats` measures, what counts as a healthy baseline,
 
 **Cap:** capped at 1,000 results from the API search ceiling. If `capped: true`, the count is a lower bound.
 
-**Drill-down:** run `/auth0-logs type:fu AND date:[<start> TO *]` to see invalid-email events with timestamps and IPs. Cluster by IP via `auth0-analytics` (when that skill exists) for brute-force signatures.
+**Drill-down:** run `/auth0-management logs type:fu AND date:[<start> TO *]` to see invalid-email events with timestamps and IPs. Cluster by IP via `auth0-analytics` (when that skill exists) for brute-force signatures.
 
 ## `mfa-adoption`—MFA-related events ÷ successful logins
 
@@ -87,5 +87,5 @@ What each section of `/auth0-stats` measures, what counts as a healthy baseline,
 1. **Failure rate up:** check the `failures.by_type` mix. `fp` up = users forgot passwords (probably benign). `fu` up = attempted enumeration (suspect). `fco` up = frontend / allowed-origins issue.
 2. **MAU dropped sharply:** confirm sandbox traffic—was a test pipeline disabled?
 3. **MFA adoption rate dropped:** `ha-debug get-connection` to inspect MFA policy on the top-1 connection.
-4. **Breach detections appeared:** identify users via `/auth0-logs type:pwd_leak`, then `ha-debug get-user --email` for state, and notify the user to rotate.
+4. **Breach detections appeared:** identify users via `/auth0-management logs type:pwd_leak`, then `ha-debug get-user --email` for state, and notify the user to rotate.
 5. **Top connection list changed:** check if a new client / IdP is pointing at the tenant that wasn't expected.

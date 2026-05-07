@@ -7,7 +7,7 @@ superseded_by: 0025
 
 # Decision 0020—Auth0 sec skill: subject-driven security inspection atop the shared auth seam
 
-**Status:** Superseded by [Decision 0025](0025-auth0-management-merge.md) (2026-05-07) for the skill-folder shape and the slash-command shape. The five subject kinds (IP, email, user_id, policy, status), the read-only restriction on attack-protection endpoints, and the three new scopes (`read:anomaly_blocks`, `read:attack_protection`, `read:users`) documented here remain in force — they are carried forward as the `sec` subcommand of the merged auth0-management skill. Original status: Accepted (2026-05-06).
+**Status:** Superseded by [Decision 0025](0025-auth0-management-merge.md) (2026-05-07) for the skill-folder shape and the slash-command shape. The five subject kinds (IP, email, user_id, policy, status), the read-only restriction on attack-protection endpoints, and the three new scopes (`read:anomaly_blocks`, `read:attack_protection`, `read:users`) documented here remain in force — the merged auth0-management skill carries them forward as the `sec` subcommand. Original status: Accepted (2026-05-06).
 
 ## Context
 

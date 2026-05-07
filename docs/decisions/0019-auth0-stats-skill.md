@@ -7,7 +7,7 @@ superseded_by: 0025
 
 # Decision 0019 — Auth0 stats skill: tenant-wide health dashboard atop the shared auth seam
 
-**Status:** Superseded by [Decision 0025](0025-auth0-management-merge.md) (2026-05-07) for the skill-folder shape and the slash-command shape. The five sections (`daily`, `mau`, `failures`, `mfa-adoption`, `top-connections`), the window-parsing semantics, and the `read:stats` scope addition documented here remain in force — they are carried forward as the `stats` subcommand of the merged auth0-management skill. Original status: Accepted (2026-05-06).
+**Status:** Superseded by [Decision 0025](0025-auth0-management-merge.md) (2026-05-07) for the skill-folder shape and the slash-command shape. The five sections (`daily`, `mau`, `failures`, `mfa-adoption`, `top-connections`), the window-parsing semantics, and the `read:stats` scope addition documented here remain in force — the merged auth0-management skill carries them forward as the `stats` subcommand. Original status: Accepted (2026-05-06).
 
 ## Context
 

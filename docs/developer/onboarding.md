@@ -51,7 +51,7 @@ If you already have the M2M app from an earlier setup and need to add `read:stat
 2. Expand **Auth0 Management API** in the list.
 3. Check **`read:stats`** alongside the existing `read:logs`. Click **Update**.
 4. Delete the cached token so the next invocation re-grants with the new scope: `rm .auth0-token.json`.
-5. Test with `/auth0-stats this week`.
+5. Test with `/auth0-management this week`.
 
 No client secret rotation is needed—the existing credentials keep working with the expanded scope.
 
@@ -62,7 +62,7 @@ If you suspect the `.env` file or `.auth0-token.json` was leaked (accidental com
 1. In the Auth0 Dashboard, navigate to **Applications → [your M2M app] → Settings**, click **Rotate Secret**, and confirm.
 2. Delete the local cache: `rm .auth0-token.json`.
 3. Update `.env` with the new Client Secret.
-4. Re-test with `/auth0-logs show me the latest 5 events`.
+4. Re-test with `/auth0-management show me the latest 5 events`.
 
 Per [Decision 0014](../decisions/0014-auth0-logs-skill.md), this manual rotation is operational debt—the centralized platform per [Decision 0015](../decisions/0015-centralized-platform-mcp.md) M4 will replace this with broker-managed tokens.
 

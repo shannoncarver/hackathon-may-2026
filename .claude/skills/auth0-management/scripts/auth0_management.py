@@ -664,7 +664,7 @@ def _run_sec(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
         result["policies"] = client.all_policies()
         result["note"] = (
             "No specific subject probed. Pass an IP, email, or user_id "
-            "to /auth0-sec to drill into a single target."
+            "to /auth0-management sec to drill into a single target."
         )
 
     json.dump(result, sys.stdout, indent=2, default=str)

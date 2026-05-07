@@ -1,30 +1,32 @@
 #!/usr/bin/env python3
-"""Shared infrastructure for LINQ auth0-* skills.
+"""Shared infrastructure for the LINQ auth0-management skill.
 
-This module isolates two seams that every auth0-* skill (auth0-logs, auth0-stats,
-future skills) needs to share:
+This module isolates two seams that the auth0-management skill's subcommands
+(logs, stats, sec) share:
 
   1. Auth seam — AuthProvider Protocol + EnvAuthProvider implementation, with
      atomic-write 0o600 token cache and in-script .env loading. Per Decision
-     0014, EnvAuthProvider is the temporary path. When Decision 0015 M4 lands
-     and the centralized-platform IdentityBroker is specified in code, a second
-     AuthProvider implementation will plug in here. Only this module changes.
+     0014 (refined by Decision 0025), EnvAuthProvider is the temporary path.
+     When Decision 0015 M4 lands and the centralized-platform IdentityBroker
+     is specified in code, a second AuthProvider implementation will plug in
+     here. Only this module changes.
 
   2. HTTP seam — auth0_get() handles proactive rate-limit back-off, reactive
      429 retry-once, and structured error envelopes for 400/401/403/414 plus a
      catch-all api_error. All Auth0 Management API GET callers route through it
-     so error categories stay consistent across skills.
+     so error categories stay consistent across subcommands.
 
 Used by:
-  - .claude/skills/auth0-logs/scripts/auth0_logs.py
-  - (future) .claude/skills/auth0-stats/scripts/auth0_stats.py
-  - (future) .claude/skills/auth0-attack/scripts/auth0_attack.py
+  - .claude/skills/auth0-management/scripts/auth0_management.py
+    (the unified CLI; merged from auth0_logs.py / auth0_stats.py / auth0_sec.py
+    per Decision 0025)
 
 Standard error categories (exit codes):
   missing_env (1), auth_failed (2), bad_query (3), rate_limited (4),
   api_error (5), uri_too_large (6).
 
-See docs/decisions/0014-auth0-logs-skill.md for the standing design decision.
+See docs/decisions/0014-auth0-logs-skill.md for the original AuthProvider seam
+and docs/decisions/0025-auth0-management-merge.md for the unified-skill shape.
 """
 
 from __future__ import annotations
@@ -58,7 +60,7 @@ def load_dotenv() -> None:
     """Load KEY=VALUE pairs from .env into os.environ if not already set.
 
     Searches: ./.env, then <repo_root>/.env (repo root inferred from this
-    file's location at .claude/skills/auth0-logs/scripts/). Silently no-ops
+    file's location at .claude/skills/auth0-management/scripts/). Silently no-ops
     if no .env is found. Existing env vars are not overridden — sourced-env
     in the parent shell still wins.
     """

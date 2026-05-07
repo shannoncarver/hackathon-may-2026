@@ -7,7 +7,7 @@ superseded_by: 0025
 
 # Decision 0014 — Auth0 logs skill: hybrid approach with swappable auth layer
 
-**Status:** Superseded by [Decision 0025](0025-auth0-management-merge.md) (2026-05-07) for the skill-folder shape and the slash-command shape. The AuthProvider seam, the M2M scope policy, and the sandbox-only restriction documented in this decision remain in force — they were carried forward intact into the merged auth0-management skill. Original status: Accepted (2026-05-04).
+**Status:** Superseded by [Decision 0025](0025-auth0-management-merge.md) (2026-05-07) for the skill-folder shape and the slash-command shape. The AuthProvider seam, the M2M scope policy, and the sandbox-only restriction documented in this decision remain in force — the merged auth0-management skill carries them forward intact. Original status: Accepted (2026-05-04).
 
 ## Context
 
