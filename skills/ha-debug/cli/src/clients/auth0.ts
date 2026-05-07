@@ -21,6 +21,8 @@ export interface Auth0LogEntry {
   ip?: string;
   connection?: string;
   clientId?: string;
+  clientName?: string;
+  userAgent?: string;
 }
 
 export interface Auth0Factor {
@@ -129,11 +131,19 @@ export class HaDebugAuth0Client {
         ip: log.ip,
         connection: log.connection,
         clientId: log.client_id,
+        clientName: log.client_name,
+        userAgent: log.user_agent,
       }));
     } catch (err: any) {
       const kind = err?.statusCode === 429 ? 'throttled' : 'unknown';
       throw new DataSourceError('auth0:user-logs', kind, true, err, `Failed to get Auth0 logs for: ${auth0UserId}`);
     }
+  }
+
+  async getUserLogsByWindow(auth0UserId: string, windowMs: number, maxFetch = 100): Promise<Auth0LogEntry[]> {
+    const all = await this.getUserLogs(auth0UserId, maxFetch);
+    const cutoff = Date.now() - windowMs;
+    return all.filter(l => new Date(l.date).getTime() >= cutoff);
   }
 
   async getUserFactors(auth0UserId: string): Promise<Auth0Factor[]> {

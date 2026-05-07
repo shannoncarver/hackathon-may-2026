@@ -293,6 +293,34 @@ program
   });
 
 program
+  .command('get-auth0-logs')
+  .description('Fetch Auth0 log events for a user within a time window')
+  .requiredOption('--email <email>', 'User email address')
+  .option('--window <window>', 'Time window to search (e.g. 8h, 30m, 2d)', '24h')
+  .option('--limit <n>', 'Max log entries to fetch from Auth0 before window filtering', '100')
+  .action(async (opts, cmd) => {
+    try {
+      const global = getGlobalOpts(cmd);
+      const windowMs = parseWindow(opts.window);
+      const result = await withClients(
+        global,
+        c => [`auth0:${c.auth0Domain}`],
+        async ({ auth0, cognito }) => {
+          const user = await auth0.getUserByEmail(opts.email);
+          if (!user) {
+            return { email: opts.email, auth0Id: null, logs: [], lookedUpAt: new Date().toISOString() };
+          }
+          const logs = await auth0.getUserLogsByWindow(user.userId, windowMs, parseInt(opts.limit));
+          return { email: opts.email, auth0Id: user.userId, count: logs.length, logs, lookedUpAt: new Date().toISOString() };
+        },
+      );
+      out(result);
+    } catch (err) {
+      fail(err);
+    }
+  });
+
+program
   .command('assemble-login-failure-case')
   .description('Assemble a case file for a user login failure')
   .requiredOption('--email <email>', 'User email address')

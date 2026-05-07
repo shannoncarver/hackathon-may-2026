@@ -1,6 +1,6 @@
 ---
 name: ha-debug
-description: Default skill for any LINQ authentication problem. Use when someone says a user can't log in, sign-in is failing, account is locked, MFA is not triggering, MFA is being bypassed, password is not working, session expired unexpectedly, JWT is rejected, Auth0 error, Cognito error, or any Harmony-Auth ticket. Also use for "does this user exist", "what is this user's status", "why can't users log in", "investigate this auth ticket", or any ERP, Titan, LINQConnect, or CTS login issue. Runs a setup preflight on every invocation — installs CLI deps and walks the engineer through missing AWS SSO or Auth0 credentials automatically. Route to auth0-stats, auth0-logs, or auth0-sec only when the question is explicitly tenant-wide rather than about a specific user.
+description: Default skill for any LINQ authentication problem. Use when someone says a user can't log in, sign-in is failing, account is locked, MFA is not triggering, MFA is being bypassed, password is not working, session expired unexpectedly, JWT is rejected, Auth0 error, Cognito error, or any Harmony-Auth ticket. Also use for "does this user exist", "what is this user's status", "why can't users log in", "investigate this auth ticket", "show me Auth0 logs for this user", or any ERP, Titan, LINQConnect, or CTS login issue. Runs a setup preflight on every invocation — installs CLI deps and walks the engineer through missing AWS SSO or Auth0 credentials automatically. Route to auth0-management only when the question is explicitly tenant-wide rather than about a specific user.
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
@@ -91,6 +91,7 @@ Identify which archetype the ticket matches, then pick the subcommand.
 | "User can't log in", "login failing", "authentication error", "keeps getting rejected", "account locked" | `assemble-login-failure-case` |
 | "User wasn't asked for MFA", "MFA not triggered", "MFA skipped", "second factor not required" | `assemble-mfa-not-enforced-case` |
 | "Does this user exist?", "what's this user's status?", quick sanity check before deeper investigation | `get-user` |
+| "Show me Auth0 logs for this user", "what did Auth0 record for this user?", ad-hoc Auth0 event stream without a full case file | `get-auth0-logs` |
 | "Is this client enabled?", "what product does this client belong to?", DynamoDB client status check by ID | `get-app-client` |
 | "Does a client exist for this school/subdomain?", "why can't users at subdomain X log in?" | `get-client-by-home-realm` |
 | "What clients exist for product Y?", auditing disabled clients across a product | `list-clients` |
@@ -113,7 +114,7 @@ Identify which archetype the ticket matches, then pick the subcommand.
 
 `ha-debug` covers the **AWS and Harmony-Auth side**: DynamoDB (lock state, MFA enrollment, SuperAdminMFA, app clients), CloudWatch (Lambda logs), and Cognito (user status, MFA pool config). Auth0 is used for identity resolution, MFA factor state, connection details, and connection MFA policy.
 
-**Auth0 log events are owned by the `auth0-logs` skill.** For the login failure archetype, always run `/auth0-logs` alongside `ha-debug` to get the Auth0 event stream. The two outputs are complementary: `ha-debug` shows AWS-side state, `auth0-logs` shows what Auth0 recorded for each login attempt.
+`ha-debug` covers the full stack: AWS-side state (DynamoDB, CloudWatch, Cognito) and the Auth0 event stream for the subject user. `assemble-login-failure-case` includes an `auth0Logs` field in its output — no separate skill is needed. For a standalone Auth0 log query without assembling a full case file, use `get-auth0-logs`.
 
 ## Step 2 — Execute
 
@@ -144,6 +145,13 @@ npx --prefix "${CLAUDE_SKILL_DIR}/cli" tsx "${CLAUDE_SKILL_DIR}/cli/src/cli.ts" 
 npx --prefix "${CLAUDE_SKILL_DIR}/cli" tsx "${CLAUDE_SKILL_DIR}/cli/src/cli.ts" get-user \
   --environment dev \
   --email john@school.edu
+
+# Auth0 log events for a user within a time window (standalone, no case file)
+npx --prefix "${CLAUDE_SKILL_DIR}/cli" tsx "${CLAUDE_SKILL_DIR}/cli/src/cli.ts" get-auth0-logs \
+  --environment dev \
+  --email john@school.edu \
+  --window 24h \
+  [--limit 100]
 
 # Login failure investigation (add --client-id when the client ID is known)
 npx --prefix "${CLAUDE_SKILL_DIR}/cli" tsx "${CLAUDE_SKILL_DIR}/cli/src/cli.ts" assemble-login-failure-case \
@@ -230,7 +238,7 @@ Analyze the output and propose a root cause. Key fields by subcommand:
 | `appClient.status` | `disabled` → the app client itself is disabled; `lambda_postauth` throws hard failure before claims are generated |
 | `cloudwatchLogs` | Lambda-level errors not captured by Auth0 — look for stack traces, unhandled exceptions, downstream service failures |
 
-For Auth0 log events (error codes, IP addresses, failure descriptions per attempt), run `/auth0-logs` with the same email and time window alongside this command.
+The `auth0Logs` field in the case file contains Auth0 event records for the same user and window — check these for error codes (`type`), IP addresses, failure descriptions, and the client name involved in each attempt.
 
 ### `assemble-mfa-not-enforced-case`
 
@@ -403,7 +411,7 @@ Per [`.claude/rules/coordination.md`](../../.claude/rules/coordination.md):
 
 ## When this skill does NOT apply
 
-- **Auth0 log queries outside of a ticket context** (ad-hoc log searches, bulk failure analysis) → use the `auth0-logs` skill instead.
+- **Tenant-wide Auth0 queries** (bulk failure analysis, MAU stats, security posture, brute-force policy) → use the `auth0-management` skill instead. `ha-debug` is scoped to a specific user's event stream.
 - **Auth0 configuration changes** (modifying Actions, RBAC, connections) → `12-eng-security-iam`.
 - **AWS infrastructure changes** → `11-eng-cloudops`.
 - **Non-Harmony-Auth products** — this skill is Harmony-Auth only. Other products are separate debuggers (follow-up ADRs).
