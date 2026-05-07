@@ -17,7 +17,7 @@ The V1 scope is held tight to make it shippable in the hackathon window:
 - **Internal employees only.** Authenticated via the company's AWS IAM Identity Center (AWS SSO).
 - **Read-only tools.** No mutation paths in V1.
 - **Human-driven via Claude Code.** No autonomous-agent code path.
-- **Tenant context lives at the handler.** The platform doesn't enforce tenant scope; each product Lambda owns it.
+- **The platform has no concept of tenant.** Some tools accept a tenant argument; if a user has permission to invoke a tool, they can invoke it for any tenant the tool accepts. Tenant scope (when a tool has one) is enforced at the handler.
 - **One auth mechanism end-to-end** — SigV4 signatures over IAM-authenticated API Gateway calls, from the user's laptop all the way to the product handler. No JWTs, no token-exchange brokers.
 
 The trust chain reduces to three legs:
@@ -46,7 +46,7 @@ Adopt the design described in the Context, with eleven binding choices.
 
 ### Authorization scope
 
-4. **Tenant context enforcement is the handler's responsibility.** The Platform MCP server does not read, validate, or pass through tenant-scoping claims. Each product Lambda receives `tenant_id` and `user_email` in its request body and is responsible for verifying that the user is authorized for that tenant against its own data.
+4. **The platform has no concept of tenant.** Permissions are tool-scoped, not tenant-scoped: if a user has the permission a tool requires, they can invoke that tool for any tenant the tool accepts. Some tools won't have a tenant at all. The wire shape from platform to handler is `{ caller_email, request_id, arguments }`; handlers read operation inputs (including `tenant_id` when applicable) from `arguments` only. `caller_email` is metadata for handler-side audit and any handler-side scope-checking it chooses to perform — it is **not** the operation's subject. The platform stores no tenant data per user, emits no tenant in audit, and surfaces no tenant in `whoami`.
 5. **External users are not in scope.** The platform MCP server is internal-only by design. There is no plan to expose it externally; AWS SSO is sufficient.
 6. **Audience binding via URL distinction.** Each per-product API Gateway has its own URL. SigV4 binds the signature to the URL plus the request body, so a request signed for one product's API cannot be replayed against another's. No `aud` claim is needed in the body.
 
@@ -129,7 +129,7 @@ sequenceDiagram
 - **No transferable user-identity envelope.** Handlers receive user email and permissions as request-body fields, trusted because the SigV4 signature proves the request originated from the Platform MCP role. Handlers cannot forward a signed identity token to internal LINQ services that aren't IAM-protected. For V1's read-only DDB-only handlers, this is acceptable. V2 can add a signed envelope if needed.
 - **AWS-coupled.** Auth is AWS-native end-to-end. Adding a non-AWS workload (Anthropic-hosted agent runtime, third-party SaaS callers) requires a separate auth path. Out of scope for V1.
 - **Per-product API Gateway is REST v1, not HTTP v2.** REST v1 costs roughly 3× per million requests. At hackathon and V1 scale, this is rounding error; at scale it would warrant revisiting (e.g., custom Lambda authorizer on HTTP v2, or VPC-private dispatch).
-- **Tenant enforcement is distributed.** Each product Lambda owns its tenant-scope check. A buggy handler could leak data across tenants if it forgets to enforce. Documenting this clearly in the per-product onboarding contract is a hard requirement.
+- **Tenant enforcement is distributed.** Each product Lambda that uses a tenant argument owns its own tenant-scope check. A buggy handler could leak data across tenants if it forgets to enforce. Documenting this clearly in the per-product onboarding contract is a hard requirement.
 - **No autonomous-agent path.** Any future use case where an agent runs without a logged-in human (scheduled jobs, hosted agent runtimes) requires a separate design.
 
 ### Rollout
